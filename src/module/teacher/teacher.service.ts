@@ -33,4 +33,19 @@ export class TeacherService {
 
         return newTeacher;
     }
+
+    async findOne(id: number){
+        const teacher = await this.prisma.teacher.findFirst({
+            where: { id },
+            select: {
+                id: true,
+                name: true,
+                email: true
+            }
+        })
+
+        if(!teacher) throw new HttpException("Professor não encontrado", HttpStatus.NOT_FOUND);
+
+        return teacher;
+    }
 }
