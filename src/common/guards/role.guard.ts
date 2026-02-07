@@ -22,7 +22,7 @@ export class RoleGuard implements CanActivate {
     const request = context.switchToHttp().getRequest();
     const user = request[REQUEST_TOKEN_PAYLOAD_NAME];
 
-    if (!user?.role) return false; // Isso faz com que o guard nao quebre caso não tenha o decorator do Token na rota ou controller
+    if (!user?.role) return false; // Isso impede que guard quebre caso não tenha o decorator do Token na rota ou controller
 
     return requiredRoles.includes(user.role);
   }

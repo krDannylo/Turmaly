@@ -3,6 +3,7 @@ import { PrismaService } from "../prisma/prisma.service";
 import { CreateClassroomDto } from "./dto/create-classroom.dto";
 import { UpdateClassroomDto } from "./dto/update-classroom.dto";
 import { ClassroomType } from "@prisma/client";
+import { PaginationQueryDto } from "src/common/dto/pagination.dto";
 
 @Injectable()
 export class ClassroomService {
@@ -54,18 +55,46 @@ export class ClassroomService {
         return classroom
     }
 
-    async findAll(teacherId: number) {
+    async findAllPaginated(teacherId: number, paginationQueryDto: PaginationQueryDto) {
+
+        const MAX_LIMIT = 50;
+        const { page = 1, limit = 10 } = paginationQueryDto;
+        const safeLimit = Math.min(limit, MAX_LIMIT)
+        const skip = (page - 1) * safeLimit;
+
         const existingTeacher = await this.prisma.teacher.findUnique({
             where: { id: teacherId }
         })
 
         if (!existingTeacher) throw new HttpException("Teacher not found", HttpStatus.NOT_FOUND)
 
-        const classrooms = await this.prisma.classroom.findMany({
-            where: { teacherId }
-        })
+        const [classrooms, total] = await Promise.all([
+            this.prisma.classroom.findMany({
+                where: { teacherId },
+                skip,
+                take: limit,
+                orderBy: { id: 'asc' }
+            }),
+            this.prisma.classroom.count({
+                where: { teacherId }
+            })
+        ])
 
-        return classrooms
+        const totalPages = Math.ceil(total / limit);
+        const hasNext = page < totalPages;
+        const hasPrev = page > 1;
+
+        return {
+            data: classrooms,
+            meta: {
+                page,
+                limit,
+                total,
+                totalPages,
+                hasNext,
+                hasPrev
+            }
+        }
     }
 
     async updateById(id: number, updateClassroomDto: UpdateClassroomDto) {
@@ -89,5 +118,20 @@ export class ClassroomService {
         })
 
         return updatedClassroom;
+    }
+
+    async deleteById(id: number) {
+        const existingClassroom = await this.findOne(id)
+
+        if (!existingClassroom) throw new HttpException("Classroom not found", HttpStatus.NOT_FOUND)
+
+        await this.prisma.classroom.delete({
+            where: { id }
+        })
+
+        return {
+            statusCode: HttpStatus.OK,
+            message: "Classroom deleted"
+        }
     }
 }

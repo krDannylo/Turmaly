@@ -39,6 +39,17 @@ model Classroom {
   type            ClassroomType
   teacherId       Int           //Chave Estrangeira, associa turma ao professor
   teacher         Teacher       @relation(fields: [teacherId], references: [id])
+  lessons         Lesson[]
+
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}
+
+model Lesson {
+  id              Int           @id @default(autoincrement())
+  startAt         DateTime
+  classroomId     Int           //Chave estrangeira
+  classroom       Classroom     @relation(fields: [classroomId], references: [id])
 
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
