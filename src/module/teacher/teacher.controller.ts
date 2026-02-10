@@ -14,10 +14,10 @@ export class TeacherController {
         private readonly teacherService: TeacherService,
     ){ }
 
-    @Post()
-    createTeacher(@Body() createTeacherDto: CreateTeacherDto): Promise<ResponseTeacherDto>{
-        return this.teacherService.create(createTeacherDto)
-    }
+    // @Post()
+    // createTeacher(@Body() createTeacherDto: CreateTeacherDto): Promise<ResponseTeacherDto>{
+    //     return this.teacherService.create(createTeacherDto)
+    // }
 
     @Get('me')
     findLoggedTeacher(@TokenPayloadParam() tokenPayloadParam: PayloadTokenDto){

@@ -13,7 +13,7 @@ export class ClassroomService {
 
     async create(createClassroomDto: CreateClassroomDto, teacherId: number) {
         // Verificar possibilidade de manter essa lógica junto do AuthGuard
-        // Para nao precisar repetir ela a todo mundo que eu quiser dado do token
+        // Para nao precisar repetir ela em todo mundo que eu quiser dados do token
         const existingTeacher = await this.prisma.teacher.findUnique({
             where: { id: teacherId }
         })
@@ -71,6 +71,7 @@ export class ClassroomService {
         const [classrooms, total] = await Promise.all([
             this.prisma.classroom.findMany({
                 where: { teacherId },
+                include: { lessons: true, posts: true },
                 skip,
                 take: limit,
                 orderBy: { id: 'asc' }

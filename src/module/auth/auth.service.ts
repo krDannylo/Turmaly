@@ -62,7 +62,7 @@ export class AuthService {
     }
 
     async register(singUpDto: SignUpDto) {
-        const userRole = singUpDto.role
+        const userRole = singUpDto.role.toLocaleLowerCase()
 
         if(userRole === UserRole.TEACHER){
 

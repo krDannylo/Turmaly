@@ -19,6 +19,7 @@ model Teacher {
   password        String
   expertiseAreas  Expertise[]   @relation("teacher_expertise")
   classrooms      Classroom[]
+  posts           Post[]
 
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
@@ -40,6 +41,7 @@ model Classroom {
   teacherId       Int           //Chave Estrangeira, associa turma ao professor
   teacher         Teacher       @relation(fields: [teacherId], references: [id])
   lessons         Lesson[]
+  posts           Post[]
 
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
@@ -48,8 +50,23 @@ model Classroom {
 model Lesson {
   id              Int           @id @default(autoincrement())
   startAt         DateTime
+  endAt           DateTime
   classroomId     Int           //Chave estrangeira
   classroom       Classroom     @relation(fields: [classroomId], references: [id])
+
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}
+
+model Post {
+  id              Int           @id @default(autoincrement())
+  title           String        
+  content         String?
+  isPinned        Boolean       @default(false)
+  teacher         Teacher       @relation(fields: [teacherId], references: [id])
+  teacherId       Int
+  classroom       Classroom     @relation(fields: [classroomId], references: [id])
+  classroomId     Int
 
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
