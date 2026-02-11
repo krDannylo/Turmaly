@@ -6,6 +6,7 @@ import { AuthModule } from '../auth/auth.module';
 import { ClassModule } from '../class/classroom.module';
 import { LessonModule } from '../lesson/lesson.module';
 import { PostModule } from '../post/post.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
@@ -13,7 +14,8 @@ import { PostModule } from '../post/post.module';
     TeacherModule,
     ClassModule,
     LessonModule,
-    PostModule
+    PostModule,
+    ScheduleModule.forRoot(),
   ],
   controllers: [AppController],
   providers: [AppService],

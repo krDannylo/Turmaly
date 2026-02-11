@@ -42,6 +42,7 @@ model Classroom {
   teacher         Teacher       @relation(fields: [teacherId], references: [id])
   lessons         Lesson[]
   posts           Post[]
+  enrollmentCode  EnrollmentCode[]
 
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
@@ -67,6 +68,28 @@ model Post {
   teacherId       Int
   classroom       Classroom     @relation(fields: [classroomId], references: [id])
   classroomId     Int
+
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}
+
+model EnrollmentCode {
+  id              Int           @id @default(autoincrement())
+  code            String        @unique
+  unique          Boolean       @default(false)
+  used            Boolean       @default(false)
+  expiresAt       DateTime?      
+  classroom       Classroom     @relation(fields: [classroomId], references: [id])
+  classroomId     Int
+
+  createdAt       DateTime      @default(now())
+}
+
+model Student {
+  id              Int           @id @default(autoincrement())
+  name            String
+  email           String?
+  phone           String?
 
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt

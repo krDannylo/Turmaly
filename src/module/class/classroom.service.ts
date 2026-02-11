@@ -4,6 +4,8 @@ import { CreateClassroomDto } from "./dto/create-classroom.dto";
 import { UpdateClassroomDto } from "./dto/update-classroom.dto";
 import { ClassroomType } from "@prisma/client";
 import { PaginationQueryDto } from "src/common/dto/pagination.dto";
+import { GenerateCodeDto } from "./dto/generate-code.dto";
+import { generateAccessCode } from "src/common/utils/generate-access-code.util";
 
 @Injectable()
 export class ClassroomService {
@@ -134,5 +136,34 @@ export class ClassroomService {
             statusCode: HttpStatus.OK,
             message: "Classroom deleted"
         }
+    }
+
+    async generateEnrollmentCode(classroomId: number, generateCodeDto: GenerateCodeDto){
+        const existingClassroom = await this.findOne(classroomId)
+
+        if (!existingClassroom) throw new HttpException("Classroom not found", HttpStatus.NOT_FOUND)
+        
+        const accessCode = generateCodeDto.code ?? generateAccessCode()
+        const expireCode = new Date()
+        expireCode.setDate(expireCode.getDate() + 1)
+
+        const enrollmentCode = await this.prisma.enrollmentCode.create({
+            data: {
+                unique: generateCodeDto.unique,
+                code: accessCode,
+                expiresAt: expireCode,
+                classroomId
+            }
+        })
+
+        return enrollmentCode;
+    }
+
+    async deleteAccessCodeExpired(){
+        const accessCodes = await this.prisma.enrollmentCode.deleteMany({
+            where: { expiresAt: null }
+        })
+
+        return accessCodes;
     }
 }

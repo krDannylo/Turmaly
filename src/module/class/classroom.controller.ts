@@ -10,10 +10,11 @@ import { ResponseClassroomDto } from "./dto/response-classroom.dto";
 import { UpdateClassroomDto } from "./dto/update-classroom.dto";
 import { PaginationQueryDto, PaginationResponseDto } from "src/common/dto/pagination.dto";
 import { MessageResponseDto } from "src/common/dto/message-responde.dto";
+import { GenerateCodeDto } from "./dto/generate-code.dto";
 
 @UseGuards(AuthTokenGuard, RoleGuard)
 @Roles(Role.TEACHER)
-@Controller('/class')
+@Controller('/classroom')
 export class ClassroomController {
 
     constructor(
@@ -47,5 +48,13 @@ export class ClassroomController {
     @Delete(':id')
     deleteById(@Param('id', ParseIntPipe) id: number): Promise<MessageResponseDto>{
         return this.classroomService.deleteById(id)
+    }
+
+    @Post(':id/generateCode')
+    generateCode(
+        @Param('id', ParseIntPipe) id: number,
+        @Body() generateCodeDto: GenerateCodeDto
+    ){
+        return this.classroomService.generateEnrollmentCode(id, generateCodeDto)
     }
 }
