@@ -40,6 +40,7 @@ model Classroom {
   type            ClassroomType
   teacherId       Int           //Chave Estrangeira, associa turma ao professor
   teacher         Teacher       @relation(fields: [teacherId], references: [id])
+  students        Student[]
   lessons         Lesson[]
   posts           Post[]
   enrollmentCode  EnrollmentCode[]
@@ -78,7 +79,7 @@ model EnrollmentCode {
   code            String        @unique
   unique          Boolean       @default(false)
   used            Boolean       @default(false)
-  expiresAt       DateTime?      
+  expiresAt       DateTime      
   classroom       Classroom     @relation(fields: [classroomId], references: [id])
   classroomId     Int
 
@@ -88,8 +89,11 @@ model EnrollmentCode {
 model Student {
   id              Int           @id @default(autoincrement())
   name            String
-  email           String?
-  phone           String?
+  email           String        @unique
+  phone           String?       @unique
+  password        String
+  classroomId     Int?           //Chave estrangeira
+  classroom       Classroom?     @relation(fields: [classroomId], references: [id])
 
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt

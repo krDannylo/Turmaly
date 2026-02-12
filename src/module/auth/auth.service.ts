@@ -37,59 +37,75 @@ export class AuthService {
     }
 
     async authenticate(signInDto: SignInDto) {
-        const teacher = await this.prisma.teacher.findFirst({
-            where: {
-                email: signInDto.email
-            }
-        })
-        
-        if(teacher){
-            const passwordIsValid = await this.hashingService.compare(
-                signInDto.password, teacher.password
-            )
+        const { email, password } = signInDto;
 
-            if(!passwordIsValid) throw new HttpException("Senha/Usuário Incorretos", HttpStatus.BAD_REQUEST)
-            
-            const token = await this.generateToken(teacher, UserRole.TEACHER)
+        const [teacher, student] = await Promise.all([
+            this.prisma.teacher.findFirst({where: { email }}),
+            this.prisma.student.findFirst({where: { email }}),
+        ])
 
-            return {
-                name: teacher.name,
-                email: teacher.email,
-                token
-            }
+        const user = teacher ?? student;
+
+        if(!user) throw new HttpException("Dados não encontrados", HttpStatus.NOT_FOUND);
+
+        const passwordIsValid = await this.hashingService.compare(
+            password,
+            user.password
+        );
+
+        if (!passwordIsValid) throw new HttpException("Senha/Usuário Incorretos", HttpStatus.BAD_REQUEST);
+
+        const role = teacher ? UserRole.TEACHER : UserRole.STUDENT
+        const token = await this.generateToken(user, role)
+
+        return {
+            name: user.name,
+            email: user.email,
+            token
         }
-        throw new HttpException("Dados não encontrados", HttpStatus.NOT_FOUND)
     }
 
     async register(singUpDto: SignUpDto) {
-        const userRole = singUpDto.role.toLocaleLowerCase()
+        const { name, email, password } = singUpDto;
+        const role = singUpDto.role.toLocaleUpperCase() as UserRole;
 
-        if(userRole === UserRole.TEACHER){
+        const allowedRoles: UserRole[] = [UserRole.STUDENT, UserRole.TEACHER];
 
-            if(!singUpDto.email || !singUpDto.password ) throw new HttpException("Body Failed", HttpStatus.BAD_GATEWAY)
-
-            const existingEmail = await this.prisma.teacher.findUnique({
-                where: { email: singUpDto.email }
-            })
-
-            if (existingEmail) throw new HttpException("Email Conflict", HttpStatus.CONFLICT)
-            
-            const passwordHash = await this.hashingService.hash(singUpDto.password)
-            const newTeacher = await this.prisma.teacher.create({
-                data: {
-                    name: singUpDto.name,
-                    email: singUpDto.email,
-                    password: passwordHash
-                },
-                select: {
-                    id: true,
-                    name: true,
-                    email: true
-                }
-            })
-
-            return newTeacher
+        if(!allowedRoles.includes(role)) {
+            throw new HttpException("Role Invalid", HttpStatus.BAD_REQUEST);
         }
-        throw new HttpException("Dados não encontrados", HttpStatus.NOT_FOUND)
+
+        if(!email || !password) {
+            throw new HttpException("Body Failed", HttpStatus.BAD_REQUEST);
+        }
+
+        const [teacherExists, studentExists] = await Promise.all([
+            this.prisma.teacher.findUnique({ where: { email } }),
+            this.prisma.student.findUnique({ where: { email } }),
+        ]);
+
+        if (teacherExists || studentExists) {
+            throw new HttpException("Email Conflict", HttpStatus.CONFLICT);
+        }
+
+        const passwordHash = await this.hashingService.hash(password);
+
+        const data = {
+            name,
+            email,
+            password: passwordHash
+        };
+
+        if (role == UserRole.TEACHER) {
+            return this.prisma.teacher.create({
+                data,
+                select: { id: true, name: true, email: true },
+            });
+        }
+
+        return this.prisma.student.create({
+            data,
+            select: { id: true, name: true, email: true },
+        })
     }
 }

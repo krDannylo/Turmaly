@@ -67,7 +67,7 @@ CREATE TABLE "EnrollmentCode" (
     "code" TEXT NOT NULL,
     "unique" BOOLEAN NOT NULL DEFAULT false,
     "used" BOOLEAN NOT NULL DEFAULT false,
-    "expiresAt" TIMESTAMP(3),
+    "expiresAt" TIMESTAMP(3) NOT NULL,
     "classroomId" INTEGER NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
@@ -78,8 +78,10 @@ CREATE TABLE "EnrollmentCode" (
 CREATE TABLE "Student" (
     "id" SERIAL NOT NULL,
     "name" TEXT NOT NULL,
-    "email" TEXT,
+    "email" TEXT NOT NULL,
     "phone" TEXT,
+    "password" TEXT NOT NULL,
+    "classroomId" INTEGER NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -107,6 +109,12 @@ CREATE UNIQUE INDEX "Classroom_name_key" ON "Classroom"("name");
 CREATE UNIQUE INDEX "EnrollmentCode_code_key" ON "EnrollmentCode"("code");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "Student_email_key" ON "Student"("email");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Student_phone_key" ON "Student"("phone");
+
+-- CreateIndex
 CREATE INDEX "_teacher_expertise_B_index" ON "_teacher_expertise"("B");
 
 -- AddForeignKey
@@ -123,6 +131,9 @@ ALTER TABLE "Post" ADD CONSTRAINT "Post_classroomId_fkey" FOREIGN KEY ("classroo
 
 -- AddForeignKey
 ALTER TABLE "EnrollmentCode" ADD CONSTRAINT "EnrollmentCode_classroomId_fkey" FOREIGN KEY ("classroomId") REFERENCES "Classroom"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Student" ADD CONSTRAINT "Student_classroomId_fkey" FOREIGN KEY ("classroomId") REFERENCES "Classroom"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "_teacher_expertise" ADD CONSTRAINT "_teacher_expertise_A_fkey" FOREIGN KEY ("A") REFERENCES "Expertise"("id") ON DELETE CASCADE ON UPDATE CASCADE;

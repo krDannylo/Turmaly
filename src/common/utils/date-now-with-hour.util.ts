@@ -1,4 +1,4 @@
-const now = new Date().toLocaleString('pt-BR', {
+const now = () => new Date().toLocaleString('pt-BR', {
     timeZone: 'America/Sao_Paulo',
     hour12: false,
     year: 'numeric',

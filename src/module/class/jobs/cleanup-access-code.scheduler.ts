@@ -10,7 +10,7 @@ export class CleanupAccessCodeScheduler {
         private readonly accessCodeQueue: Queue,
     ) { }
 
-    @Cron('*/1 * * * *', {
+    @Cron('*/30 * * * *', {
         timeZone: 'America/Sao_Paulo'
     })
     async handleCron() {

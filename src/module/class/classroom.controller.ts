@@ -11,9 +11,9 @@ import { UpdateClassroomDto } from "./dto/update-classroom.dto";
 import { PaginationQueryDto, PaginationResponseDto } from "src/common/dto/pagination.dto";
 import { MessageResponseDto } from "src/common/dto/message-responde.dto";
 import { GenerateCodeDto } from "./dto/generate-code.dto";
+import { GetStudentId } from "src/common/decorators/get-student-id.decorator";
 
 @UseGuards(AuthTokenGuard, RoleGuard)
-@Roles(Role.TEACHER)
 @Controller('/classroom')
 export class ClassroomController {
 
@@ -22,6 +22,7 @@ export class ClassroomController {
     ){ }
 
     @Post()
+    @Roles(Role.TEACHER)
     createClassroom(
         @Body() createClassroomDto: CreateClassroomDto,
         @GetTeacherId() teacherId
@@ -30,6 +31,7 @@ export class ClassroomController {
     }
 
     @Get()
+    @Roles(Role.TEACHER)
     findClassrooms(
         @GetTeacherId() teacherId,
         @Query() paginationQueryDto: PaginationQueryDto
@@ -38,6 +40,7 @@ export class ClassroomController {
     }
 
     @Patch(':id')
+    @Roles(Role.TEACHER)
     updateClassroom(
         @Param('id', ParseIntPipe) id: number,
         @Body() updateClassroomDto: UpdateClassroomDto
@@ -46,15 +49,26 @@ export class ClassroomController {
     }
 
     @Delete(':id')
+    @Roles(Role.TEACHER)
     deleteById(@Param('id', ParseIntPipe) id: number): Promise<MessageResponseDto>{
         return this.classroomService.deleteById(id)
     }
 
     @Post(':id/generateCode')
+    @Roles(Role.TEACHER)
     generateCode(
         @Param('id', ParseIntPipe) id: number,
         @Body() generateCodeDto: GenerateCodeDto
     ){
         return this.classroomService.generateEnrollmentCode(id, generateCodeDto)
+    }
+
+    @Post('inviteCode/:code')
+    @Roles(Role.STUDENT)
+    inviteCode(
+        @Param('code') inviteCode: string,
+        @GetStudentId() studentId
+    ){
+        return this.classroomService.accessCode(inviteCode, studentId)
     }
 }
