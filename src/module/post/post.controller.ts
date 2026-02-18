@@ -15,24 +15,24 @@ export class PostController {
         private readonly postService: PostService
     ){ }
 
-    @Post()
-    createPost(
-        @Body() createPostDto: CreatePostDto,
-        @GetTeacherId() teacherId        
-    ): Promise<ResponsePostDto> {
-        return this.postService.create(createPostDto, teacherId)
-    }
+    // @Post()
+    // createPost(
+    //     @Body() createPostDto: CreatePostDto,
+    //     @GetTeacherId() teacherId        
+    // ): Promise<ResponsePostDto> {
+    //     return this.postService.create(createPostDto, teacherId)
+    // }
 
-    @Patch(':id')
-    updatePost(
-        @Param('id', ParseIntPipe) id: number,
-        @Body() updatePostDto: UpdatePostDto
-    ): Promise<ResponsePostDto> {
-        return this.postService.updateById(id, updatePostDto)
-    }
+    // @Patch(':id')
+    // updatePost(
+    //     @Param('id', ParseIntPipe) id: number,
+    //     @Body() updatePostDto: UpdatePostDto
+    // ): Promise<ResponsePostDto> {
+    //     return this.postService.updateById(id, updatePostDto)
+    // }
 
-    @Delete(':id')
-    deleteById(@Param('id', ParseIntPipe) id: number): Promise<MessageResponseDto>{
-        return this.postService.deleteById(id)
-    }
+    // @Delete(':id')
+    // deleteById(@Param('id', ParseIntPipe) id: number): Promise<MessageResponseDto>{
+    //     return this.postService.deleteById(id)
+    // }
 }

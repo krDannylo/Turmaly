@@ -18,26 +18,26 @@ export class LessonController {
         private readonly lessonService: LessonService
     ){ }
 
-    @Post()
-    createLesson(
-        @Body() createLessonDto: CreateLessonDto,
-        @GetTeacherId() teacherId
-    ): Promise<ResponseLessonDto>{
-        return this.lessonService.create(createLessonDto, teacherId)
-    }
+    // @Post()
+    // createLesson(
+    //     @Body() createLessonDto: CreateLessonDto,
+    //     @GetTeacherId() teacherId
+    // ): Promise<ResponseLessonDto>{
+    //     return this.lessonService.create(createLessonDto, teacherId)
+    // }
 
-    @Patch(':id')
-    updateLesson(
-        @Param('id', ParseIntPipe) id: number,
-        @Body() updateLessonDto: UpdateLessonDto
-    ): Promise<ResponseLessonDto>{
-        return this.lessonService.updateById(id, updateLessonDto) 
-    }
+    // @Patch(':id')
+    // updateLesson(
+    //     @Param('id', ParseIntPipe) id: number,
+    //     @Body() updateLessonDto: UpdateLessonDto
+    // ): Promise<ResponseLessonDto>{
+    //     return this.lessonService.updateById(id, updateLessonDto) 
+    // }
 
-    @Delete(':id')
-    deleteById(
-        @Param('id', ParseIntPipe) id: number
-    ): Promise<MessageResponseDto> {
-        return this.lessonService.deleteById(id)
-    }
+    // @Delete(':id')
+    // deleteById(
+    //     @Param('id', ParseIntPipe) id: number
+    // ): Promise<MessageResponseDto> {
+    //     return this.lessonService.deleteById(id)
+    // }
 }

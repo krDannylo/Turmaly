@@ -13,222 +13,222 @@ export class ClassroomService {
         private prisma: PrismaService
     ) {}
 
-    async create(createClassroomDto: CreateClassroomDto, teacherId: number) {
-        // Verificar possibilidade de manter essa lógica junto do AuthGuard
-        // Para nao precisar repetir ela em todo mundo que eu quiser dados do token
-        const existingTeacher = await this.prisma.teacher.findUnique({
-            where: { id: teacherId }
-        })
+    // async create(createClassroomDto: CreateClassroomDto, teacherId: number) {
+    //     // Verificar possibilidade de manter essa lógica junto do AuthGuard
+    //     // Para nao precisar repetir ela em todo mundo que eu quiser dados do token
+    //     const existingTeacher = await this.prisma.teacher.findUnique({
+    //         where: { id: teacherId }
+    //     })
 
-         if (!existingTeacher) throw new HttpException("Teacher not found", HttpStatus.NOT_FOUND)
+    //      if (!existingTeacher) throw new HttpException("Teacher not found", HttpStatus.NOT_FOUND)
 
-        const existingClassroom = await this.prisma.classroom.findUnique({
-            where: { 
-                name: createClassroomDto.name,
-                teacherId,
-            }
-        })
+    //     const existingClassroom = await this.prisma.classroom.findUnique({
+    //         where: { 
+    //             name: createClassroomDto.name,
+    //             teacherId,
+    //         }
+    //     })
 
-        if (existingClassroom) throw new HttpException("Classroom already Exist", HttpStatus.CONFLICT)
+    //     if (existingClassroom) throw new HttpException("Classroom already Exist", HttpStatus.CONFLICT)
 
-        const classroom = await this.prisma.classroom.create({
-            data: {
-                name: createClassroomDto.name,
-                type: createClassroomDto.type,
-                teacherId: teacherId
-            },
-            include: {
-                teacher: {
-                    select: { name: true }
-                }
-            }
-        })
+    //     const classroom = await this.prisma.classroom.create({
+    //         data: {
+    //             name: createClassroomDto.name,
+    //             type: createClassroomDto.type,
+    //             teacherId: teacherId
+    //         },
+    //         include: {
+    //             teacher: {
+    //                 select: { name: true }
+    //             }
+    //         }
+    //     })
 
-        return classroom;
-    }
+    //     return classroom;
+    // }
 
-    async findOne(id: number) {
-        const classroom = await this.prisma.classroom.findFirst({
-            where: { id }
-        })
+    // async findOne(id: number) {
+    //     const classroom = await this.prisma.classroom.findFirst({
+    //         where: { id }
+    //     })
 
-        if (!classroom) throw new HttpException("Classroom not found", HttpStatus.NOT_FOUND)
+    //     if (!classroom) throw new HttpException("Classroom not found", HttpStatus.NOT_FOUND)
 
-        return classroom
-    }
+    //     return classroom
+    // }
 
-    async findOneCode(code: string) {
-        const accessCode = await this.prisma.enrollmentCode.findFirst({
-            where: { code }
-        })
+    // async findOneCode(code: string) {
+    //     const accessCode = await this.prisma.enrollmentCode.findFirst({
+    //         where: { code }
+    //     })
 
-        return accessCode
-    }
+    //     return accessCode
+    // }
 
-    async findAllPaginated(teacherId: number, paginationQueryDto: PaginationQueryDto) {
-        const existingTeacher = await this.prisma.teacher.findUnique({
-            where: { id: teacherId }
-        })
+    // async findAllPaginated(teacherId: number, paginationQueryDto: PaginationQueryDto) {
+    //     const existingTeacher = await this.prisma.teacher.findUnique({
+    //         where: { id: teacherId }
+    //     })
 
-        if (!existingTeacher) throw new HttpException("Teacher not found", HttpStatus.NOT_FOUND)        
+    //     if (!existingTeacher) throw new HttpException("Teacher not found", HttpStatus.NOT_FOUND)        
 
-        const MAX_LIMIT = 50;
-        const { page = 1, limit = 10 } = paginationQueryDto;
-        const safeLimit = Math.min(limit, MAX_LIMIT)
-        const skip = (page - 1) * safeLimit;
+    //     const MAX_LIMIT = 50;
+    //     const { page = 1, limit = 10 } = paginationQueryDto;
+    //     const safeLimit = Math.min(limit, MAX_LIMIT)
+    //     const skip = (page - 1) * safeLimit;
 
-        const [classrooms, total] = await Promise.all([
-            this.prisma.classroom.findMany({
-                where: { teacherId },
-                select: {
-                    id: true,
-                    name: true,
-                    type: true,
-                    teacher: {
-                        select: {
-                            name: true,
-                            email: true,
-                        }
-                    },
-                    lessons: true,
-                    posts: true,
-                    enrollmentCode: true,
-                    students: {
-                        select: {
-                            name: true,
-                            email: true,
-                            phone: true,
-                            classroomId: true,
-                        }
-                    }
-                },
-                skip,
-                take: limit,
-                orderBy: { id: 'asc' }
-            }),
-            this.prisma.classroom.count({
-                where: { teacherId }
-            })
-        ])
+    //     const [classrooms, total] = await Promise.all([
+    //         this.prisma.classroom.findMany({
+    //             where: { teacherId },
+    //             select: {
+    //                 id: true,
+    //                 name: true,
+    //                 type: true,
+    //                 teacher: {
+    //                     select: {
+    //                         name: true,
+    //                         email: true,
+    //                     }
+    //                 },
+    //                 lessons: true,
+    //                 posts: true,
+    //                 enrollmentCode: true,
+    //                 students: {
+    //                     select: {
+    //                         name: true,
+    //                         email: true,
+    //                         phone: true,
+    //                         classroomId: true,
+    //                     }
+    //                 }
+    //             },
+    //             skip,
+    //             take: limit,
+    //             orderBy: { id: 'asc' }
+    //         }),
+    //         this.prisma.classroom.count({
+    //             where: { teacherId }
+    //         })
+    //     ])
 
-        const totalPages = Math.ceil(total / limit);
-        const hasNext = page < totalPages;
-        const hasPrev = page > 1;
+    //     const totalPages = Math.ceil(total / limit);
+    //     const hasNext = page < totalPages;
+    //     const hasPrev = page > 1;
 
-        return {
-            data: classrooms,
-            meta: {
-                page,
-                limit,
-                total,
-                totalPages,
-                hasNext,
-                hasPrev
-            }
-        }
-    }
+    //     return {
+    //         data: classrooms,
+    //         meta: {
+    //             page,
+    //             limit,
+    //             total,
+    //             totalPages,
+    //             hasNext,
+    //             hasPrev
+    //         }
+    //     }
+    // }
 
-    async updateById(id: number, updateClassroomDto: UpdateClassroomDto) {
-        const existingClassroom = await this.findOne(id)
+    // async updateById(id: number, updateClassroomDto: UpdateClassroomDto) {
+    //     const existingClassroom = await this.findOne(id)
 
-        if (!existingClassroom) throw new HttpException("Classroom not found", HttpStatus.NOT_FOUND)
+    //     if (!existingClassroom) throw new HttpException("Classroom not found", HttpStatus.NOT_FOUND)
 
-        const updateData: { name?: string, type?: ClassroomType } = {
-            name: updateClassroomDto.name ? updateClassroomDto.name : existingClassroom.name,
-            type: updateClassroomDto.type ? updateClassroomDto.type : existingClassroom.type
-        }
+    //     const updateData: { name?: string, type?: ClassroomType } = {
+    //         name: updateClassroomDto.name ? updateClassroomDto.name : existingClassroom.name,
+    //         type: updateClassroomDto.type ? updateClassroomDto.type : existingClassroom.type
+    //     }
 
-        const updatedClassroom = await this.prisma.classroom.update({
-            where: { id: existingClassroom.id },
-            data: updateData,
-            select: {
-                id: true,
-                name: true,
-                type: true,
-            }
-        })
+    //     const updatedClassroom = await this.prisma.classroom.update({
+    //         where: { id: existingClassroom.id },
+    //         data: updateData,
+    //         select: {
+    //             id: true,
+    //             name: true,
+    //             type: true,
+    //         }
+    //     })
 
-        return updatedClassroom;
-    }
+    //     return updatedClassroom;
+    // }
 
-    async deleteById(id: number) {
-        const existingClassroom = await this.findOne(id)
+    // async deleteById(id: number) {
+    //     const existingClassroom = await this.findOne(id)
 
-        if (!existingClassroom) throw new HttpException("Classroom not found", HttpStatus.NOT_FOUND)
+    //     if (!existingClassroom) throw new HttpException("Classroom not found", HttpStatus.NOT_FOUND)
 
-        await this.prisma.classroom.delete({
-            where: { id }
-        })
+    //     await this.prisma.classroom.delete({
+    //         where: { id }
+    //     })
 
-        return {
-            statusCode: HttpStatus.OK,
-            message: "Classroom deleted"
-        }
-    }
+    //     return {
+    //         statusCode: HttpStatus.OK,
+    //         message: "Classroom deleted"
+    //     }
+    // }
 
-    async generateEnrollmentCode(classroomId: number, generateCodeDto: GenerateCodeDto){
-        const now = new Date();
-        const existingClassroom = await this.findOne(classroomId)
+    // async generateEnrollmentCode(classroomId: number, generateCodeDto: GenerateCodeDto){
+    //     const now = new Date();
+    //     const existingClassroom = await this.findOne(classroomId)
 
-        if (!existingClassroom) throw new HttpException("Classroom not found", HttpStatus.NOT_FOUND)
+    //     if (!existingClassroom) throw new HttpException("Classroom not found", HttpStatus.NOT_FOUND)
         
-        const accessCode = generateCodeDto.code ?? generateAccessCode()
+    //     const accessCode = generateCodeDto.code ?? generateAccessCode()
 
-        const existingCode = await this.findOneCode(accessCode)
-        if(existingCode) throw new HttpException("Code already exist", HttpStatus.BAD_REQUEST)
+    //     const existingCode = await this.findOneCode(accessCode)
+    //     if(existingCode) throw new HttpException("Code already exist", HttpStatus.BAD_REQUEST)
 
-        let expireCode: Date;
+    //     let expireCode: Date;
 
-        if (generateCodeDto.expiresAt) {
-            expireCode = new Date(generateCodeDto.expiresAt);
-        } else {
-            expireCode = new Date();
-            expireCode.setDate(expireCode.getDate() + 1);
-        }
+    //     if (generateCodeDto.expiresAt) {
+    //         expireCode = new Date(generateCodeDto.expiresAt);
+    //     } else {
+    //         expireCode = new Date();
+    //         expireCode.setDate(expireCode.getDate() + 1);
+    //     }
     
-        if(expireCode < now) 
-            throw new HttpException("Date to expire code invalid", HttpStatus.BAD_REQUEST)
+    //     if(expireCode < now) 
+    //         throw new HttpException("Date to expire code invalid", HttpStatus.BAD_REQUEST)
 
-        const enrollmentCode = await this.prisma.enrollmentCode.create({
-            data: {
-                unique: generateCodeDto.unique,
-                code: accessCode,
-                expiresAt: expireCode,
-                classroomId
-            }
-        })
+    //     const enrollmentCode = await this.prisma.enrollmentCode.create({
+    //         data: {
+    //             unique: generateCodeDto.unique,
+    //             code: accessCode,
+    //             expiresAt: expireCode,
+    //             classroomId
+    //         }
+    //     })
 
-        return enrollmentCode;
-    }
+    //     return enrollmentCode;
+    // }
 
-    async accessCode(inviteCode: string, studentId: number){
-        const now = new Date();
-        const existingCode = await this.findOneCode(inviteCode);
+    // async accessCode(inviteCode: string, studentId: number){
+    //     const now = new Date();
+    //     const existingCode = await this.findOneCode(inviteCode);
 
-        if (!existingCode) 
-            throw new HttpException("Code not found", HttpStatus.NOT_FOUND)
+    //     if (!existingCode) 
+    //         throw new HttpException("Code not found", HttpStatus.NOT_FOUND)
 
-        if(existingCode.expiresAt < now || existingCode.used) 
-            throw new HttpException("Code expired", HttpStatus.BAD_REQUEST)
+    //     if(existingCode.expiresAt < now || existingCode.used) 
+    //         throw new HttpException("Code expired", HttpStatus.BAD_REQUEST)
         
-        const addStudentToClassroom = await this.prisma.classroom.update({
-            where: { id: existingCode.id },
-            data: {
-                students: {
-                    connect: { id: studentId }
-                }
-            }
-        })
+    //     const addStudentToClassroom = await this.prisma.classroom.update({
+    //         where: { id: existingCode.id },
+    //         data: {
+    //             students: {
+    //                 connect: { id: studentId }
+    //             }
+    //         }
+    //     })
 
-        return addStudentToClassroom;
-    }
+    //     return addStudentToClassroom;
+    // }
 
-    async deleteInvalidCode(){
-        const now = new Date();
-        const invalidCodes = await this.prisma.enrollmentCode.deleteMany({
-            where: { expiresAt: { lt: now } }
-        })
+    // async deleteInvalidCode(){
+    //     const now = new Date();
+    //     const invalidCodes = await this.prisma.enrollmentCode.deleteMany({
+    //         where: { expiresAt: { lt: now } }
+    //     })
 
-        return invalidCodes;
-    }
+    //     return invalidCodes;
+    // }
 }
