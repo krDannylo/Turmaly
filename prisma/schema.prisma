@@ -50,10 +50,7 @@ model Student {
   userId          Int           @unique
   user            User          @relation(fields: [userId], references: [id])
 
-  classroomId     Int?          //Chave estrangeira
-  classroom       Classroom?    @relation(fields: [classroomId], references: [id])
-
-  @@index([classroomId])
+  classroomStudents ClassroomStudent[]
 
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
@@ -72,10 +69,10 @@ model Classroom {
   id              Int           @id @default(autoincrement())
   name            String        @unique
   type            ClassroomType
-  students        Student[]
   lessons         Lesson[]
   posts           Post[]
   enrollmentCode  EnrollmentCode[]
+  classroomStudents ClassroomStudent[]
 
   teacherId       Int           //Chave Estrangeira, associa turma ao professor
   teacher         Teacher       @relation(fields: [teacherId], references: [id])
@@ -129,6 +126,16 @@ model EnrollmentCode {
   classroom       Classroom     @relation(fields: [classroomId], references: [id])
 
   createdAt       DateTime      @default(now())
+}
+
+model ClassroomStudent {
+  classroomId     Int
+  studentId       Int
+
+  classroom       Classroom     @relation(fields: [classroomId], references: [id])
+  student         Student       @relation(fields: [studentId], references: [id])
+
+  @@id([classroomId, studentId]) // impede duplicação
 }
 
 //Comando para rodar novas migrations

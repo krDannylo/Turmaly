@@ -7,6 +7,6 @@ import { TeacherService } from "../teacher/teacher.service";
 @Controller('/me')
 export class UserController {
     constructor(
-         private readonly teacherService: TeacherService
+        //  private readonly teacherService: TeacherService
     ){ }
 }

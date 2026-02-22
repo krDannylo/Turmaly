@@ -12,9 +12,5 @@ export class CreatePostDto {
 
     @IsBoolean()
     @IsOptional()
-    readonly isPinned: boolean 
-
-    @IsNotEmpty()
-    @IsNumber()
-    readonly classroomId: number
+    readonly isPinned: boolean
 }

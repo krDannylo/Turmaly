@@ -2,6 +2,8 @@ import { HttpException, HttpStatus, Injectable } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { CreateLessonDto } from "./dto/create-lesson.dto";
 import { UpdateLessonDto } from "./dto/update-lesson.dto";
+import { UserProfileDto } from "../user/dto/user-profile.dto";
+import { UserRole } from "../auth/common/user-type.enum";
 
 @Injectable()
 export class LessonService {
@@ -9,99 +11,144 @@ export class LessonService {
         private prisma: PrismaService
     ) { }
 
-    // async create(createLessonDto: CreateLessonDto, teacherId: number) {
-    //     const existingTeacher = await this.prisma.teacher.findUnique({
-    //         where: { id: teacherId }
-    //     })
+    async create(createLessonDto: CreateLessonDto, profile: UserProfileDto, classroomId: number) {
+        const existingClassroom = await this.prisma.classroom.findUnique({
+            where: { 
+                id: classroomId,
+                teacherId: profile.profileId
+            }
+        })
 
-    //     if (!existingTeacher) throw new HttpException("Teacher not found", HttpStatus.NOT_FOUND)
+        if (!existingClassroom) throw new HttpException("Classroom not found", HttpStatus.NOT_FOUND)
 
-    //     const existingClassroom = await this.prisma.classroom.findUnique({
-    //         where: { 
-    //             id: createLessonDto.classroomId,
-    //             teacherId 
-    //         }
-    //     })
+        if (!(createLessonDto.startAt.getTime() < createLessonDto.endAt.getTime())){
+            throw new HttpException("Date Invalid", HttpStatus.BAD_REQUEST)
+        }
 
-    //     if (!existingClassroom) throw new HttpException("Classroom not found", HttpStatus.NOT_FOUND)
+        const lesson = await this.prisma.lesson.create({
+            data: {
+                startAt: createLessonDto.startAt,
+                endAt: createLessonDto.endAt,
+                classroomId: existingClassroom.id
+            },
+            // include: {
+            //     classroom: {
+            //         select: { 
+            //             name: true, 
+            //             teacher: {
+            //                 select: { 
+            //                     user: {
+            //                         select: { 
+            //                             name: true,
+            //                         }
+            //                     }
+            //                 }
+            //             }
+            //         }
+            //     },
+            // }
+        })
 
-    //     if (!(createLessonDto.startAt.getTime() < createLessonDto.endAt.getTime())){
-    //         throw new HttpException("Date Invalid", HttpStatus.BAD_REQUEST)
-    //     }
+        return lesson;
+    }
 
-    //     const lesson = await this.prisma.lesson.create({
-    //         data: {
-    //             startAt: createLessonDto.startAt,
-    //             endAt: createLessonDto.endAt,
-    //             classroomId: existingClassroom.id
-    //         },
-    //         include: {
-    //             classroom: {
-    //                 select: { 
-    //                     name: true, 
-    //                     teacher: {
-    //                         select: {
-    //                             id: true,
-    //                             name: true,
-    //                         }
-    //                     }
-    //                 }
-    //             },
-    //         }
-    //     })
+    async findOne(id: number, profile: UserProfileDto) {
+        let lesson;
+        if(profile.role === UserRole.TEACHER) {
+            lesson = await this.prisma.lesson.findFirst({
+                where: { 
+                    id,
+                    classroom: {
+                        teacherId: profile.profileId
+                    }
+                }
+            })
+        } else if (profile.role === UserRole.STUDENT) {
+            lesson = await this.prisma.lesson.findFirst({
+                where: {
+                    id,
+                    classroom: {
+                        classroomStudents: {
+                            some: {
+                                studentId: profile.profileId
+                            }
+                        }
+                    }
+                }
+            })
+        }
 
-    //     return lesson;
-    // }
+        if (!lesson) throw new HttpException("Lesson not found", HttpStatus.NOT_FOUND)
 
-    // async findOne(id: number) {
-    //     const lesson = await this.prisma.lesson.findFirst({
-    //         where: { id }
-    //     })
+        return lesson
+    }
 
-    //     if (!lesson) throw new HttpException("Lesson not found", HttpStatus.NOT_FOUND)
+    async findAllLessonByClassroomId(classroomId: number, profile: UserProfileDto) {
+        if(profile.role === UserRole.TEACHER) {
+            return await this.prisma.lesson.findMany({
+                where: {
+                    classroomId,
+                    classroom: {
+                        teacherId: profile.profileId
+                    }
+                }
+            })
+        } else if (profile.role === UserRole.STUDENT) {
+            return await this.prisma.lesson.findMany({
+                where: {
+                    classroomId,
+                    classroom: {
+                        classroomStudents: {
+                            some: {
+                                studentId: profile.profileId
+                            }
+                        }
+                    }
+                }
+            })
+        }
+        // return lessons.map(lesson => new ResponseLessonDto(lesson));
+    }
 
-    //     return lesson
-    // }
+    async updateById(id: number, updateLessonDto: UpdateLessonDto, profile: UserProfileDto){
+        const existingLesson = await this.findOne(id, profile)
 
-    // async updateById(id: number, updateLessonDto: UpdateLessonDto){
-    //     const existingLesson = await this.findOne(id)
+        if(!existingLesson) throw new HttpException("Lesson not found", HttpStatus.NOT_FOUND)
 
-    //     if(!existingLesson) throw new HttpException("Lesson not found", HttpStatus.NOT_FOUND)
+        const startAt: Date = updateLessonDto.startAt ?? existingLesson.startAt
+        const endAt: Date = updateLessonDto.endAt ?? existingLesson.endAt
 
-    //     const startAt: Date = updateLessonDto.startAt ?? existingLesson.startAt
-    //     const endAt: Date = updateLessonDto.endAt ?? existingLesson.endAt
+        if (endAt.getTime() <= startAt.getTime()) throw new HttpException('endAt must be after startAt',HttpStatus.BAD_REQUEST);
 
-    //     if (endAt.getTime() <= startAt.getTime()) throw new HttpException('endAt must be after startAt',HttpStatus.BAD_REQUEST);
+        const data: { startAt?: Date, endAt?: Date } = {}
+        if (updateLessonDto.startAt) data.startAt = startAt;
+        if (updateLessonDto.endAt) data.endAt = endAt;        
 
-    //     const data: { startAt?: Date, endAt?: Date } = {}
-    //     if (updateLessonDto.startAt) data.startAt = startAt;
-    //     if (updateLessonDto.endAt) data.endAt = endAt;        
+        const updateLesson = await this.prisma.lesson.update({
+            where: { id: existingLesson.id },
+            data,
+            select: {
+                id: true,
+                startAt: true,
+                endAt: true
+            }
+        })
 
-    //     const updateLesson = await this.prisma.lesson.update({
-    //         where: { id: existingLesson.id },
-    //         data,
-    //         select: {
-    //             id: true,
-    //             startAt: true,
-    //             endAt: true
-    //         }
-    //     })
+        return updateLesson;
+    }
 
-    //     return updateLesson;
-    // }
+    async deleteById(id: number, profile: UserProfileDto) {
+        const existingLesson = await this.findOne(id, profile)
 
-    // async deleteById(id: number) {
-    //     const existingLesson = await this.findOne(id)
+        if (!existingLesson) throw new HttpException("Lesson not found", HttpStatus.NOT_FOUND)
 
-    //     if (!existingLesson) throw new HttpException("Lesson not found", HttpStatus.NOT_FOUND)
+        await this.prisma.lesson.delete({
+            where: { id }
+        })
 
-    //     await this.prisma.lesson.delete({
-    //         where: { id }
-    //     })
-
-    //     return {
-    //         statusCode: HttpStatus.OK,
-    //         message: "Lesson deleted"
-    //     }
-    // }
+        return {
+            statusCode: HttpStatus.OK,
+            message: "Lesson deleted"
+        }
+    }
 }

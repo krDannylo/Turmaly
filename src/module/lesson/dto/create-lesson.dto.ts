@@ -14,8 +14,4 @@ export class CreateLessonDto {
     @Type(() => Date)
     @IsValidEndDate('startAt', { message: 'endAt must be after startAt' })
     readonly endAt: Date
-
-    @IsNotEmpty()
-    @IsNumber()
-    readonly classroomId: number
 }

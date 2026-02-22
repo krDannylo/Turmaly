@@ -55,7 +55,7 @@ export class AuthService {
         );
 
         if (!passwordIsValid) throw new HttpException("Senha/Usuário Incorretos", HttpStatus.BAD_REQUEST);
-
+        
         const token = await this.generateToken(user, user.role)
 
         return {
@@ -90,13 +90,6 @@ export class AuthService {
 
         const passwordHash = await this.hashingService.hash(password);
 
-        const userData = {
-            name,
-            email,
-            password: passwordHash,
-            role
-        };
-
         const [user, profile] = await this.prisma.$transaction(async (prisma) => {
             const createdUser = await prisma.user.create({
                 data: {
@@ -128,8 +121,8 @@ export class AuthService {
             name: user.name,
             email: user.email,
             role: user.role,
-            ...(role === UserRole.TEACHER && { teacher: profile }),
-            ...(role === UserRole.STUDENT && { student: profile }),
+            // ...(role === UserRole.TEACHER && { teacher: profile }),
+            // ...(role === UserRole.STUDENT && { student: profile }),
         };
     }
 }
