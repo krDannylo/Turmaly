@@ -2,6 +2,8 @@ import { HttpException, HttpStatus, Injectable } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { CreatePostDto } from "./dto/create-post.dto";
 import { UpdatePostDto } from "./dto/update-post-dto";
+import { UserProfileDto } from "../user/dto/user-profile.dto";
+import { UserRole } from "@prisma/client";
 
 @Injectable()
 export class PostService {
@@ -9,17 +11,11 @@ export class PostService {
         private prisma: PrismaService
     ) { }
 
-    async create(createPostDto: CreatePostDto, teacherId: number){
-        const existingTeacher = await this.prisma.teacher.findUnique({
-            where: { id: teacherId }
-        })
-
-        if (!existingTeacher) throw new HttpException("Teacher not found", HttpStatus.NOT_FOUND)
-
+    async create(classroomId: number, createPostDto: CreatePostDto, profile: UserProfileDto){
         const existingClassroom = await this.prisma.classroom.findUnique({
             where: { 
-                id: createPostDto.classroomId,
-                teacherId 
+                id: classroomId,
+                teacherId: profile.profileId 
             }
         })
 
@@ -30,7 +26,7 @@ export class PostService {
                 title: createPostDto.title,
                 isPinned: createPostDto.isPinned ?? false,
                 classroomId: existingClassroom.id,
-                teacherId,
+                teacherId: profile.profileId ,
 
                 ...(createPostDto.content && {
                     content: createPostDto.content,
@@ -41,9 +37,13 @@ export class PostService {
                     select: { 
                         name: true, 
                         teacher: {
-                            select: {
-                                id: true,
-                                name: true,
+                            select: { 
+                                user: {
+                                    select: {
+                                        id: true,  
+                                        name: true
+                                    }
+                                }
                             }
                         }
                     }
@@ -55,20 +55,73 @@ export class PostService {
         return post;
     }
 
-    async findOne(id: number) {
-        const post = await this.prisma.post.findFirst({
-            where: { id }
-        })
+    async findAllPostByClassroomId(classroomId: number, profile: UserProfileDto) {
+        let posts;
+        if(profile.role === UserRole.TEACHER) {
+            posts = await this.prisma.post.findMany({
+                where: {
+                    classroomId,
+                    classroom: {
+                        teacherId: profile.profileId
+                    }
+                }
+            })
+        } else if (profile.role === UserRole.STUDENT) {
+            posts = await this.prisma.post.findMany({
+                where: {
+                    classroomId,
+                    classroom: {
+                        classroomStudents: {
+                            some: {
+                                studentId: profile.profileId
+                            }
+                        }
+                    }
+                }
+            })
+        }
+
+        if (!posts.length) {
+            throw new HttpException("Posts not found", HttpStatus.NOT_FOUND)
+        }
+
+        return posts;
+    }
+    async findOne(id: number, profile: UserProfileDto) {
+        let post;
+        if(profile.role === UserRole.TEACHER) {
+            post = await this.prisma.post.findFirst({
+                where: { 
+                    id,
+                    classroom: {
+                        teacherId: profile.profileId
+                    }
+                }
+            })
+        } else if (profile.role === UserRole.STUDENT) {
+            post = await this.prisma.post.findFirst({
+                where: {
+                    id,
+                    classroom: {
+                        classroomStudents: {
+                            some: {
+                                studentId: profile.profileId
+                            }
+                        }
+                    }
+                }
+            })
+        }
 
         if (!post) throw new HttpException("Post not found", HttpStatus.NOT_FOUND)
 
         return post
     }
 
-   async updateById(id: number, updatePostDto: UpdatePostDto){
-        const existingPost = await this.findOne(id)
+    async updateById(id: number, updatePostDto: UpdatePostDto, profile: UserProfileDto){
+        const existingPost = await this.findOne(id, profile)
 
-        if(!existingPost) throw new HttpException("Lesson not found", HttpStatus.NOT_FOUND)
+        if(!existingPost) throw new HttpException("Post not found", HttpStatus.NOT_FOUND)
 
         const updateData: {
             title?: string
@@ -94,8 +147,8 @@ export class PostService {
         return updatedPost;
     }
 
-    async deleteById(id: number) {
-        const existingPost = await this.findOne(id)
+    async deleteById(id: number, profile: UserProfileDto) {
+        const existingPost = await this.findOne(id, profile)
 
         if (!existingPost) throw new HttpException("Post not found", HttpStatus.NOT_FOUND)
 

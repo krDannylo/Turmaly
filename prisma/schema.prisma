@@ -12,14 +12,45 @@ enum ClassroomType {
   PUBLIC
 }
 
-model Teacher {
+enum UserRole {
+  TEACHER
+  STUDENT
+}
+
+model User {
   id              Int           @id @default(autoincrement())
   name            String
   email           String        @unique
+  phone           String?       @unique
   password        String
+  role            UserRole
+
+  teacher         Teacher?
+  student         Student?
+
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}
+
+model Teacher {
+  id              Int           @id @default(autoincrement())
+  userId          Int           @unique
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   expertiseAreas  Expertise[]   @relation("teacher_expertise")
   classrooms      Classroom[]
   posts           Post[]
+
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}
+
+model Student {
+  id              Int           @id @default(autoincrement())
+  userId          Int           @unique
+  user            User          @relation(fields: [userId], references: [id])
+
+  classroomStudents ClassroomStudent[]
 
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
@@ -38,12 +69,15 @@ model Classroom {
   id              Int           @id @default(autoincrement())
   name            String        @unique
   type            ClassroomType
-  teacherId       Int           //Chave Estrangeira, associa turma ao professor
-  teacher         Teacher       @relation(fields: [teacherId], references: [id])
-  students        Student[]
   lessons         Lesson[]
   posts           Post[]
   enrollmentCode  EnrollmentCode[]
+  classroomStudents ClassroomStudent[]
+
+  teacherId       Int           //Chave Estrangeira, associa turma ao professor
+  teacher         Teacher       @relation(fields: [teacherId], references: [id])
+
+  @@index([teacherId])
 
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
@@ -53,8 +87,11 @@ model Lesson {
   id              Int           @id @default(autoincrement())
   startAt         DateTime
   endAt           DateTime
+
   classroomId     Int           //Chave estrangeira
   classroom       Classroom     @relation(fields: [classroomId], references: [id])
+
+  @@index([classroomId])
 
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
@@ -65,10 +102,14 @@ model Post {
   title           String        
   content         String?
   isPinned        Boolean       @default(false)
-  teacher         Teacher       @relation(fields: [teacherId], references: [id])
+
   teacherId       Int
-  classroom       Classroom     @relation(fields: [classroomId], references: [id])
+  teacher         Teacher       @relation(fields: [teacherId], references: [id])
   classroomId     Int
+  classroom       Classroom     @relation(fields: [classroomId], references: [id])
+
+  @@index([classroomId])
+  @@index([teacherId])
 
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
@@ -80,23 +121,21 @@ model EnrollmentCode {
   unique          Boolean       @default(false)
   used            Boolean       @default(false)
   expiresAt       DateTime      
-  classroom       Classroom     @relation(fields: [classroomId], references: [id])
+
   classroomId     Int
+  classroom       Classroom     @relation(fields: [classroomId], references: [id])
 
   createdAt       DateTime      @default(now())
 }
 
-model Student {
-  id              Int           @id @default(autoincrement())
-  name            String
-  email           String        @unique
-  phone           String?       @unique
-  password        String
-  classroomId     Int?           //Chave estrangeira
-  classroom       Classroom?     @relation(fields: [classroomId], references: [id])
+model ClassroomStudent {
+  classroomId     Int
+  studentId       Int
 
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  classroom       Classroom     @relation(fields: [classroomId], references: [id])
+  student         Student       @relation(fields: [studentId], references: [id])
+
+  @@id([classroomId, studentId]) // impede duplicação
 }
 
 //Comando para rodar novas migrations

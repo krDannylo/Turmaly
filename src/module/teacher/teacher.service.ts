@@ -10,42 +10,42 @@ export class TeacherService {
         private readonly hashingService: HashingServiceProtocol
     ) {}
 
-    async create(createTeacherDto: CreateTeacherDto) {
-        const existingEmail = await this.prisma.teacher.findUnique({
-            where: { email: createTeacherDto.email }
-        })
+    // async create(createTeacherDto: CreateTeacherDto) {
+    //     const existingEmail = await this.prisma.teacher.findUnique({
+    //         where: { email: createTeacherDto.email }
+    //     })
 
-        if (existingEmail) throw new HttpException("Email Conflict", HttpStatus.CONFLICT)
+    //     if (existingEmail) throw new HttpException("Email Conflict", HttpStatus.CONFLICT)
         
-        const passwordHash = await this.hashingService.hash(createTeacherDto.password)
-        const newTeacher = await this.prisma.teacher.create({
-            data: {
-                name: createTeacherDto.name,
-                email: createTeacherDto.email,
-                password: passwordHash,
-            },
-            select: {
-                id: true,
-                name: true,
-                email: true
-            }
-        })
+    //     const passwordHash = await this.hashingService.hash(createTeacherDto.password)
+    //     const newTeacher = await this.prisma.teacher.create({
+    //         data: {
+    //             name: createTeacherDto.name,
+    //             email: createTeacherDto.email,
+    //             password: passwordHash,
+    //         },
+    //         select: {
+    //             id: true,
+    //             name: true,
+    //             email: true
+    //         }
+    //     })
 
-        return newTeacher;
-    }
+    //     return newTeacher;
+    // }
 
-    async findOne(id: number){
-        const teacher = await this.prisma.teacher.findFirst({
-            where: { id },
-            select: {
-                id: true,
-                name: true,
-                email: true
-            }
-        })
+    // async findOne(id: number){
+    //     const teacher = await this.prisma.teacher.findFirst({
+    //         where: { id },
+    //         select: {
+    //             id: true,
+    //             name: true,
+    //             email: true
+    //         }
+    //     })
 
-        if(!teacher) throw new HttpException("Professor não encontrado", HttpStatus.NOT_FOUND);
+    //     if(!teacher) throw new HttpException("Professor não encontrado", HttpStatus.NOT_FOUND);
 
-        return teacher;
-    }
+    //     return teacher;
+    // }
 }

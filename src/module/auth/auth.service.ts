@@ -1,12 +1,12 @@
+import { HttpException, HttpStatus, Inject, Injectable } from "@nestjs/common";
+import { HashingServiceProtocol } from "src/common/hash/hashing.service";
+import { PrismaService } from "../prisma/prisma.service";
+import { JwtService } from "@nestjs/jwt";
 import { SignUpDto } from './dto/sign-up.dto';
 import { SignInDto } from './dto/sign-in.dto';
-import { HttpException, HttpStatus, Inject, Injectable } from "@nestjs/common";
-import { PrismaService } from "../prisma/prisma.service";
-import { HashingServiceProtocol } from "src/common/hash/hashing.service";
-import type { ConfigType } from '@nestjs/config';
+import { UserRole } from '@prisma/client';
 import jwtConfig from "./config/jwt.config";
-import { JwtService } from "@nestjs/jwt";
-import { UserRole } from './common/user-type.enum';
+import type { ConfigType } from '@nestjs/config';
 
 @Injectable()
 export class AuthService {
@@ -39,12 +39,13 @@ export class AuthService {
     async authenticate(signInDto: SignInDto) {
         const { email, password } = signInDto;
 
-        const [teacher, student] = await Promise.all([
-            this.prisma.teacher.findFirst({where: { email }}),
-            this.prisma.student.findFirst({where: { email }}),
-        ])
-
-        const user = teacher ?? student;
+        const user = await this.prisma.user.findUnique({
+            where: { email },
+            include: {
+                teacher: true,
+                student: true
+            }
+        })
 
         if(!user) throw new HttpException("Dados não encontrados", HttpStatus.NOT_FOUND);
 
@@ -54,13 +55,13 @@ export class AuthService {
         );
 
         if (!passwordIsValid) throw new HttpException("Senha/Usuário Incorretos", HttpStatus.BAD_REQUEST);
-
-        const role = teacher ? UserRole.TEACHER : UserRole.STUDENT
-        const token = await this.generateToken(user, role)
+        
+        const token = await this.generateToken(user, user.role)
 
         return {
             name: user.name,
             email: user.email,
+            role: user.role,
             token
         }
     }
@@ -79,33 +80,49 @@ export class AuthService {
             throw new HttpException("Body Failed", HttpStatus.BAD_REQUEST);
         }
 
-        const [teacherExists, studentExists] = await Promise.all([
-            this.prisma.teacher.findUnique({ where: { email } }),
-            this.prisma.student.findUnique({ where: { email } }),
-        ]);
+        const userExists = await this.prisma.user.findUnique({
+            where: { email },
+        });
 
-        if (teacherExists || studentExists) {
+        if (userExists) {
             throw new HttpException("Email Conflict", HttpStatus.CONFLICT);
         }
 
         const passwordHash = await this.hashingService.hash(password);
 
-        const data = {
-            name,
-            email,
-            password: passwordHash
-        };
-
-        if (role == UserRole.TEACHER) {
-            return this.prisma.teacher.create({
-                data,
-                select: { id: true, name: true, email: true },
+        const [user, profile] = await this.prisma.$transaction(async (prisma) => {
+            const createdUser = await prisma.user.create({
+                data: {
+                name,
+                email,
+                password: passwordHash,
+                role,
+                },
             });
-        }
 
-        return this.prisma.student.create({
-            data,
-            select: { id: true, name: true, email: true },
+            let createdProfile;
+            if (role === UserRole.TEACHER) {
+                createdProfile = await prisma.teacher.create({
+                data: { user: { connect: { id: createdUser.id } } },
+                select: { id: true },
+                });
+            } else {
+                createdProfile = await prisma.student.create({
+                data: { user: { connect: { id: createdUser.id } } },
+                select: { id: true },
+                });
+            }
+
+            return [createdUser, createdProfile]
         })
+
+        return {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+            // ...(role === UserRole.TEACHER && { teacher: profile }),
+            // ...(role === UserRole.STUDENT && { student: profile }),
+        };
     }
 }

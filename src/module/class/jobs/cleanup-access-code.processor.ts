@@ -13,8 +13,8 @@ export class CleanupAccesCodeProcessor {
     async handle(job: Job){
         console.log(`[${now()}] INFO: Cron Job 'cleanup-access-code' started`)
 
-        const data = await this.classroomService.deleteInvalidCode()
+        // const data = await this.classroomService.deleteInvalidCode()
         
-        console.log(`Deleted: ${JSON.stringify(data)}`)
+        // console.log(`Deleted: ${JSON.stringify(data)}`)
     }
 }

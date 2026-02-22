@@ -2,6 +2,8 @@ import { HttpException, HttpStatus, Injectable } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { CreateLessonDto } from "./dto/create-lesson.dto";
 import { UpdateLessonDto } from "./dto/update-lesson.dto";
+import { UserProfileDto } from "../user/dto/user-profile.dto";
+import { UserRole } from "../auth/common/user-type.enum";
 
 @Injectable()
 export class LessonService {
@@ -9,17 +11,11 @@ export class LessonService {
         private prisma: PrismaService
     ) { }
 
-    async create(createLessonDto: CreateLessonDto, teacherId: number) {
-        const existingTeacher = await this.prisma.teacher.findUnique({
-            where: { id: teacherId }
-        })
-
-        if (!existingTeacher) throw new HttpException("Teacher not found", HttpStatus.NOT_FOUND)
-
+    async create(createLessonDto: CreateLessonDto, profile: UserProfileDto, classroomId: number) {
         const existingClassroom = await this.prisma.classroom.findUnique({
             where: { 
-                id: createLessonDto.classroomId,
-                teacherId 
+                id: classroomId,
+                teacherId: profile.profileId
             }
         })
 
@@ -35,36 +31,87 @@ export class LessonService {
                 endAt: createLessonDto.endAt,
                 classroomId: existingClassroom.id
             },
-            include: {
-                classroom: {
-                    select: { 
-                        name: true, 
-                        teacher: {
-                            select: {
-                                id: true,
-                                name: true,
-                            }
-                        }
-                    }
-                },
-            }
+            // include: {
+            //     classroom: {
+            //         select: { 
+            //             name: true, 
+            //             teacher: {
+            //                 select: { 
+            //                     user: {
+            //                         select: { 
+            //                             name: true,
+            //                         }
+            //                     }
+            //                 }
+            //             }
+            //         }
+            //     },
+            // }
         })
 
         return lesson;
     }
 
-    async findOne(id: number) {
-        const lesson = await this.prisma.lesson.findFirst({
-            where: { id }
-        })
+    async findOne(id: number, profile: UserProfileDto) {
+        let lesson;
+        if(profile.role === UserRole.TEACHER) {
+            lesson = await this.prisma.lesson.findFirst({
+                where: { 
+                    id,
+                    classroom: {
+                        teacherId: profile.profileId
+                    }
+                }
+            })
+        } else if (profile.role === UserRole.STUDENT) {
+            lesson = await this.prisma.lesson.findFirst({
+                where: {
+                    id,
+                    classroom: {
+                        classroomStudents: {
+                            some: {
+                                studentId: profile.profileId
+                            }
+                        }
+                    }
+                }
+            })
+        }
 
         if (!lesson) throw new HttpException("Lesson not found", HttpStatus.NOT_FOUND)
 
         return lesson
     }
 
-    async updateById(id: number, updateLessonDto: UpdateLessonDto){
-        const existingLesson = await this.findOne(id)
+    async findAllLessonByClassroomId(classroomId: number, profile: UserProfileDto) {
+        if(profile.role === UserRole.TEACHER) {
+            return await this.prisma.lesson.findMany({
+                where: {
+                    classroomId,
+                    classroom: {
+                        teacherId: profile.profileId
+                    }
+                }
+            })
+        } else if (profile.role === UserRole.STUDENT) {
+            return await this.prisma.lesson.findMany({
+                where: {
+                    classroomId,
+                    classroom: {
+                        classroomStudents: {
+                            some: {
+                                studentId: profile.profileId
+                            }
+                        }
+                    }
+                }
+            })
+        }
+        // return lessons.map(lesson => new ResponseLessonDto(lesson));
+    }
+
+    async updateById(id: number, updateLessonDto: UpdateLessonDto, profile: UserProfileDto){
+        const existingLesson = await this.findOne(id, profile)
 
         if(!existingLesson) throw new HttpException("Lesson not found", HttpStatus.NOT_FOUND)
 
@@ -90,8 +137,8 @@ export class LessonService {
         return updateLesson;
     }
 
-    async deleteById(id: number) {
-        const existingLesson = await this.findOne(id)
+    async deleteById(id: number, profile: UserProfileDto) {
+        const existingLesson = await this.findOne(id, profile)
 
         if (!existingLesson) throw new HttpException("Lesson not found", HttpStatus.NOT_FOUND)
 

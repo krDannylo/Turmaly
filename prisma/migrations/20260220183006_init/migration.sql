@@ -1,16 +1,41 @@
 -- CreateEnum
 CREATE TYPE "ClassroomType" AS ENUM ('PRIVATE', 'PUBLIC');
 
+-- CreateEnum
+CREATE TYPE "UserRole" AS ENUM ('TEACHER', 'STUDENT');
+
 -- CreateTable
-CREATE TABLE "Teacher" (
+CREATE TABLE "User" (
     "id" SERIAL NOT NULL,
     "name" TEXT NOT NULL,
     "email" TEXT NOT NULL,
+    "phone" TEXT,
     "password" TEXT NOT NULL,
+    "role" "UserRole" NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "User_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Teacher" (
+    "id" SERIAL NOT NULL,
+    "userId" INTEGER NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "Teacher_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Student" (
+    "id" SERIAL NOT NULL,
+    "userId" INTEGER NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Student_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -75,17 +100,11 @@ CREATE TABLE "EnrollmentCode" (
 );
 
 -- CreateTable
-CREATE TABLE "Student" (
-    "id" SERIAL NOT NULL,
-    "name" TEXT NOT NULL,
-    "email" TEXT NOT NULL,
-    "phone" TEXT,
-    "password" TEXT NOT NULL,
+CREATE TABLE "ClassroomStudent" (
     "classroomId" INTEGER NOT NULL,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "studentId" INTEGER NOT NULL,
 
-    CONSTRAINT "Student_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "ClassroomStudent_pkey" PRIMARY KEY ("classroomId","studentId")
 );
 
 -- CreateTable
@@ -97,7 +116,16 @@ CREATE TABLE "_teacher_expertise" (
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Teacher_email_key" ON "Teacher"("email");
+CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "User_phone_key" ON "User"("phone");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Teacher_userId_key" ON "Teacher"("userId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Student_userId_key" ON "Student"("userId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Expertise_name_key" ON "Expertise"("name");
@@ -106,16 +134,28 @@ CREATE UNIQUE INDEX "Expertise_name_key" ON "Expertise"("name");
 CREATE UNIQUE INDEX "Classroom_name_key" ON "Classroom"("name");
 
 -- CreateIndex
+CREATE INDEX "Classroom_teacherId_idx" ON "Classroom"("teacherId");
+
+-- CreateIndex
+CREATE INDEX "Lesson_classroomId_idx" ON "Lesson"("classroomId");
+
+-- CreateIndex
+CREATE INDEX "Post_classroomId_idx" ON "Post"("classroomId");
+
+-- CreateIndex
+CREATE INDEX "Post_teacherId_idx" ON "Post"("teacherId");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "EnrollmentCode_code_key" ON "EnrollmentCode"("code");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Student_email_key" ON "Student"("email");
-
--- CreateIndex
-CREATE UNIQUE INDEX "Student_phone_key" ON "Student"("phone");
-
--- CreateIndex
 CREATE INDEX "_teacher_expertise_B_index" ON "_teacher_expertise"("B");
+
+-- AddForeignKey
+ALTER TABLE "Teacher" ADD CONSTRAINT "Teacher_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Student" ADD CONSTRAINT "Student_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Classroom" ADD CONSTRAINT "Classroom_teacherId_fkey" FOREIGN KEY ("teacherId") REFERENCES "Teacher"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -133,7 +173,10 @@ ALTER TABLE "Post" ADD CONSTRAINT "Post_classroomId_fkey" FOREIGN KEY ("classroo
 ALTER TABLE "EnrollmentCode" ADD CONSTRAINT "EnrollmentCode_classroomId_fkey" FOREIGN KEY ("classroomId") REFERENCES "Classroom"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Student" ADD CONSTRAINT "Student_classroomId_fkey" FOREIGN KEY ("classroomId") REFERENCES "Classroom"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "ClassroomStudent" ADD CONSTRAINT "ClassroomStudent_classroomId_fkey" FOREIGN KEY ("classroomId") REFERENCES "Classroom"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ClassroomStudent" ADD CONSTRAINT "ClassroomStudent_studentId_fkey" FOREIGN KEY ("studentId") REFERENCES "Student"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "_teacher_expertise" ADD CONSTRAINT "_teacher_expertise_A_fkey" FOREIGN KEY ("A") REFERENCES "Expertise"("id") ON DELETE CASCADE ON UPDATE CASCADE;

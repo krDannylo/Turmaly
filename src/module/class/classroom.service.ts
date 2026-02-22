@@ -1,4 +1,5 @@
-import { HttpException, HttpStatus, Injectable } from "@nestjs/common";
+import { UserProfileDto } from './../user/dto/user-profile.dto';
+import { ForbiddenException, HttpException, HttpStatus, Injectable } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { CreateClassroomDto } from "./dto/create-classroom.dto";
 import { UpdateClassroomDto } from "./dto/update-classroom.dto";
@@ -6,6 +7,7 @@ import { ClassroomType } from "@prisma/client";
 import { PaginationQueryDto } from "src/common/dto/pagination.dto";
 import { GenerateCodeDto } from "./dto/generate-code.dto";
 import { generateAccessCode } from "src/common/utils/generate-access-code.util";
+import { UserRole } from "../auth/common/user-type.enum";
 
 @Injectable()
 export class ClassroomService {
@@ -13,19 +15,11 @@ export class ClassroomService {
         private prisma: PrismaService
     ) {}
 
-    async create(createClassroomDto: CreateClassroomDto, teacherId: number) {
-        // Verificar possibilidade de manter essa lógica junto do AuthGuard
-        // Para nao precisar repetir ela em todo mundo que eu quiser dados do token
-        const existingTeacher = await this.prisma.teacher.findUnique({
-            where: { id: teacherId }
-        })
-
-         if (!existingTeacher) throw new HttpException("Teacher not found", HttpStatus.NOT_FOUND)
-
+    async create(createClassroomDto: CreateClassroomDto, profile: UserProfileDto) {
         const existingClassroom = await this.prisma.classroom.findUnique({
-            where: { 
+            where: {
                 name: createClassroomDto.name,
-                teacherId,
+                teacherId: profile.profileId,
             }
         })
 
@@ -35,11 +29,15 @@ export class ClassroomService {
             data: {
                 name: createClassroomDto.name,
                 type: createClassroomDto.type,
-                teacherId: teacherId
+                teacherId: profile.profileId
             },
             include: {
                 teacher: {
-                    select: { name: true }
+                    select: { 
+                        user: {
+                            select: { name: true}
+                        }
+                    }
                 }
             }
         })
@@ -47,10 +45,27 @@ export class ClassroomService {
         return classroom;
     }
 
-    async findOne(id: number) {
-        const classroom = await this.prisma.classroom.findFirst({
-            where: { id }
-        })
+    async findOne(id: number, profile: UserProfileDto) {
+        let classroom;
+        if(profile.role === UserRole.TEACHER) {
+            classroom = await this.prisma.classroom.findFirst({
+                where: {
+                    id,
+                    teacherId: profile.profileId
+                }
+            })
+        } else if (profile.role === UserRole.STUDENT) {
+            classroom = await this.prisma.classroom.findFirst({
+                where: {
+                    id,
+                    classroomStudents: {
+                        some: {
+                            studentId: profile.profileId
+                        }
+                    }
+                }
+            })
+        }
 
         if (!classroom) throw new HttpException("Classroom not found", HttpStatus.NOT_FOUND)
 
@@ -65,51 +80,42 @@ export class ClassroomService {
         return accessCode
     }
 
-    async findAllPaginated(teacherId: number, paginationQueryDto: PaginationQueryDto) {
-        const existingTeacher = await this.prisma.teacher.findUnique({
-            where: { id: teacherId }
-        })
-
-        if (!existingTeacher) throw new HttpException("Teacher not found", HttpStatus.NOT_FOUND)        
-
+    async findAllPaginated(paginationQueryDto: PaginationQueryDto, profile: UserProfileDto) {
         const MAX_LIMIT = 50;
         const { page = 1, limit = 10 } = paginationQueryDto;
         const safeLimit = Math.min(limit, MAX_LIMIT)
         const skip = (page - 1) * safeLimit;
 
-        const [classrooms, total] = await Promise.all([
-            this.prisma.classroom.findMany({
-                where: { teacherId },
-                select: {
-                    id: true,
-                    name: true,
-                    type: true,
-                    teacher: {
-                        select: {
-                            name: true,
-                            email: true,
-                        }
-                    },
-                    lessons: true,
-                    posts: true,
-                    enrollmentCode: true,
-                    students: {
-                        select: {
-                            name: true,
-                            email: true,
-                            phone: true,
-                            classroomId: true,
-                        }
-                    }
-                },
-                skip,
-                take: limit,
-                orderBy: { id: 'asc' }
-            }),
-            this.prisma.classroom.count({
-                where: { teacherId }
-            })
-        ])
+        let classrooms;
+        let total;
+
+        if(profile.role === UserRole.TEACHER) {
+            [classrooms, total] = await Promise.all([
+                this.prisma.classroom.findMany({
+                    where: { teacherId: profile.profileId },
+                    select: this.getClassroomSelect(),
+                    skip,
+                    take: limit,
+                    orderBy: { id: 'asc' }
+                }),
+                this.prisma.classroom.count({
+                    where: { teacherId: profile.profileId }
+                })
+            ]);            
+        } else if(profile.role === UserRole.STUDENT) {
+            [classrooms, total] = await Promise.all([
+                this.prisma.classroom.findMany({
+                    where: { classroomStudents: { some: { studentId: profile.profileId } } },
+                    select: this.getClassroomSelect(),
+                    skip,
+                    take: limit,
+                    orderBy: { id: 'asc' }
+                }),
+                this.prisma.classroom.count({
+                    where: { classroomStudents: { some: { studentId: profile.profileId } } }
+                })
+            ]);
+        }
 
         const totalPages = Math.ceil(total / limit);
         const hasNext = page < totalPages;
@@ -128,8 +134,57 @@ export class ClassroomService {
         }
     }
 
-    async updateById(id: number, updateClassroomDto: UpdateClassroomDto) {
-        const existingClassroom = await this.findOne(id)
+    async findAllStudentByClassroomId(classroomId: number, profile: UserProfileDto){
+        if (profile.role === UserRole.TEACHER) {
+            const classroom = await this.prisma.classroom.findFirst({
+            where: {
+                id: classroomId,
+                teacherId: profile.profileId
+            }
+            })
+
+            if (!classroom) {
+            throw new ForbiddenException()
+            }
+
+        } else if (profile.role === UserRole.STUDENT) {
+            const isInClassroom = await this.prisma.classroomStudent.findFirst({
+            where: {
+                classroomId,
+                studentId: profile.profileId
+            }
+            })
+
+            if (!isInClassroom) {
+            throw new ForbiddenException()
+            }
+        }
+
+        const students = await this.prisma.student.findMany({
+            where: {
+            classroomStudents: {
+                some: {
+                classroomId
+                }
+            }
+            },
+            select: {
+            id: true,
+            user: {
+                select: {
+                name: true,
+                email: true,
+                phone: true
+                }
+            }
+            }
+        })
+
+        return students
+    }
+
+    async updateById(id: number, updateClassroomDto: UpdateClassroomDto, profile: UserProfileDto) {
+        const existingClassroom = await this.findOne(id, profile)
 
         if (!existingClassroom) throw new HttpException("Classroom not found", HttpStatus.NOT_FOUND)
 
@@ -151,8 +206,8 @@ export class ClassroomService {
         return updatedClassroom;
     }
 
-    async deleteById(id: number) {
-        const existingClassroom = await this.findOne(id)
+    async deleteById(id: number, profile: UserProfileDto) {
+        const existingClassroom = await this.findOne(id, profile)
 
         if (!existingClassroom) throw new HttpException("Classroom not found", HttpStatus.NOT_FOUND)
 
@@ -166,9 +221,9 @@ export class ClassroomService {
         }
     }
 
-    async generateEnrollmentCode(classroomId: number, generateCodeDto: GenerateCodeDto){
+    async generateEnrollmentCode(classroomId: number, generateCodeDto: GenerateCodeDto, profile: UserProfileDto){
         const now = new Date();
-        const existingClassroom = await this.findOne(classroomId)
+        const existingClassroom = await this.findOne(classroomId, profile)
 
         if (!existingClassroom) throw new HttpException("Classroom not found", HttpStatus.NOT_FOUND)
         
@@ -201,7 +256,7 @@ export class ClassroomService {
         return enrollmentCode;
     }
 
-    async accessCode(inviteCode: string, studentId: number){
+    async enrollByCode(inviteCode: string, profile: number){
         const now = new Date();
         const existingCode = await this.findOneCode(inviteCode);
 
@@ -212,10 +267,12 @@ export class ClassroomService {
             throw new HttpException("Code expired", HttpStatus.BAD_REQUEST)
         
         const addStudentToClassroom = await this.prisma.classroom.update({
-            where: { id: existingCode.id },
+            where: { id: existingCode.classroomId },
             data: {
-                students: {
-                    connect: { id: studentId }
+                classroomStudents: {
+                    create: {
+                        studentId: profile
+                    }
                 }
             }
         })
@@ -230,5 +287,41 @@ export class ClassroomService {
         })
 
         return invalidCodes;
+    }
+
+    private getClassroomSelect() {
+        return {
+            id: true,
+            name: true,
+            type: true,
+            teacher: {
+                select: { 
+                    user: {
+                        select: { 
+                            name: true,
+                            email: true
+                        }
+                    }
+                }
+            },
+            lessons: true,
+            posts: true,
+            enrollmentCode: true,
+            classroomStudents: {
+                select: {
+                    student: {
+                        select: {
+                            id: true,
+                            user: {
+                                select: {
+                                    name: true,
+                                    email: true
+                                }
+                            }
+                        }
+                    },
+                }
+            }
+        };
     }
 }

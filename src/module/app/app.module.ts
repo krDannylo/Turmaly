@@ -7,15 +7,19 @@ import { ClassModule } from '../class/classroom.module';
 import { LessonModule } from '../lesson/lesson.module';
 import { PostModule } from '../post/post.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import { UserModule } from '../user/user.module';
+import { StudentModule } from '../student/student.module';
 
 @Module({
   imports: [
     AuthModule,
-    TeacherModule,
+    // TeacherModule,
+    UserModule,
     ClassModule,
     LessonModule,
     PostModule,
-    ScheduleModule.forRoot(),
+    StudentModule
+    // ScheduleModule.forRoot(),
   ],
   controllers: [AppController],
   providers: [AppService],

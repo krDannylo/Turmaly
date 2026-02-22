@@ -1,43 +1,47 @@
-import { GetTeacherId } from './../../common/decorators/get-teacher-id.decorator';
-import { Body, Controller, Delete, Param, ParseIntPipe, Patch, Post, Query, UseGuards } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Query, UseGuards } from "@nestjs/common";
 import { LessonService } from "./lesson.service";
-import { CreateLessonDto } from "./dto/create-lesson.dto";
 import { ResponseLessonDto } from './dto/response-lesson.dto';
 import { AuthTokenGuard } from '../auth/guard/auth-token.guard';
 import { RoleGuard } from 'src/common/guards/role.guard';
 import { Roles } from 'src/common/decorators/roles.decorator';
-import { Role } from 'src/common/enums/role.enums';
 import { UpdateLessonDto } from './dto/update-lesson.dto';
 import { MessageResponseDto } from 'src/common/dto/message-responde.dto';
+import { UserProfileDto } from "../user/dto/user-profile.dto";
+import { GetUserProfile } from "src/common/decorators/get-profile-id.decorator";
+import { ProfileGuard } from "src/common/guards/profile.guard";
+import { Role } from "src/common/enums/role.enums";
 
-@UseGuards(AuthTokenGuard, RoleGuard)
-@Roles(Role.TEACHER)
-@Controller('lesson')
+@UseGuards(AuthTokenGuard, RoleGuard, ProfileGuard)
+@Controller('lessons')
 export class LessonController {
     constructor(
         private readonly lessonService: LessonService
     ){ }
 
-    @Post()
-    createLesson(
-        @Body() createLessonDto: CreateLessonDto,
-        @GetTeacherId() teacherId
-    ): Promise<ResponseLessonDto>{
-        return this.lessonService.create(createLessonDto, teacherId)
+    @Get(':lessonsId')
+    getById(
+        @Param('lessonId', ParseIntPipe) lessonId: number,
+        @GetUserProfile() profile: UserProfileDto
+    ) {
+        return this.lessonService.findOne(lessonId, profile)
     }
 
-    @Patch(':id')
+    @Patch(':lessonsId')
+    @Roles(Role.TEACHER)
     updateLesson(
-        @Param('id', ParseIntPipe) id: number,
-        @Body() updateLessonDto: UpdateLessonDto
+        @Param('lessonsId', ParseIntPipe) id: number,
+        @Body() updateLessonDto: UpdateLessonDto,
+        @GetUserProfile() profile: UserProfileDto
     ): Promise<ResponseLessonDto>{
-        return this.lessonService.updateById(id, updateLessonDto) 
+        return this.lessonService.updateById(id, updateLessonDto, profile) 
     }
 
-    @Delete(':id')
+    @Delete(':lessonsId')
+    @Roles(Role.TEACHER)
     deleteById(
-        @Param('id', ParseIntPipe) id: number
+        @Param('lessonsId', ParseIntPipe) id: number,
+        @GetUserProfile() profile: UserProfileDto
     ): Promise<MessageResponseDto> {
-        return this.lessonService.deleteById(id)
+        return this.lessonService.deleteById(id, profile)
     }
 }

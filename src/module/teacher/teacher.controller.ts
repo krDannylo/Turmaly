@@ -21,6 +21,6 @@ export class TeacherController {
 
     @Get('me')
     findLoggedTeacher(@TokenPayloadParam() tokenPayloadParam: PayloadTokenDto){
-        return this.teacherService.findOne(tokenPayloadParam.sub)
+        // return this.teacherService.findOne(tokenPayloadParam.sub)
     }
 }

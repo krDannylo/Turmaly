@@ -5,70 +5,135 @@ import { RoleGuard } from "src/common/guards/role.guard";
 import { Role } from "src/common/enums/role.enums";
 import { Roles } from "src/common/decorators/roles.decorator";
 import { ClassroomService } from "./classroom.service";
-import { GetTeacherId } from "src/common/decorators/get-teacher-id.decorator";
 import { ResponseClassroomDto } from "./dto/response-classroom.dto";
 import { UpdateClassroomDto } from "./dto/update-classroom.dto";
 import { PaginationQueryDto, PaginationResponseDto } from "src/common/dto/pagination.dto";
 import { MessageResponseDto } from "src/common/dto/message-responde.dto";
 import { GenerateCodeDto } from "./dto/generate-code.dto";
-import { GetStudentId } from "src/common/decorators/get-student-id.decorator";
+import { GetUserProfile } from "src/common/decorators/get-profile-id.decorator";
+import { ProfileGuard } from "src/common/guards/profile.guard";
+import { UserProfileDto } from "../user/dto/user-profile.dto";
+import { CreateLessonDto } from "../lesson/dto/create-lesson.dto";
+import { ResponseLessonDto } from "../lesson/dto/response-lesson.dto";
+import { LessonService } from "../lesson/lesson.service";
+import { CreatePostDto } from "../post/dto/create-post.dto";
+import { PostService } from "../post/post.service";
 
-@UseGuards(AuthTokenGuard, RoleGuard)
+@UseGuards(AuthTokenGuard, RoleGuard, ProfileGuard)
 @Controller('/classroom')
 export class ClassroomController {
 
     constructor(
         private readonly classroomService: ClassroomService,
+        private readonly lessonService: LessonService,
+        private readonly postService: PostService
     ){ }
-
+    //!Classroom
     @Post()
     @Roles(Role.TEACHER)
     createClassroom(
         @Body() createClassroomDto: CreateClassroomDto,
-        @GetTeacherId() teacherId
-    ): Promise<ResponseClassroomDto>{
-        return this.classroomService.create(createClassroomDto, teacherId)
+        @GetUserProfile() profile: UserProfileDto
+    ){
+        return this.classroomService.create(createClassroomDto, profile)
     }
 
     @Get()
-    @Roles(Role.TEACHER)
-    findClassrooms(
-        @GetTeacherId() teacherId,
-        @Query() paginationQueryDto: PaginationQueryDto
+    getClassrooms(
+        @Query() paginationQueryDto: PaginationQueryDto,
+        @GetUserProfile() profile: UserProfileDto
     ): Promise<PaginationResponseDto<ResponseClassroomDto>>{
-        return this.classroomService.findAllPaginated(teacherId, paginationQueryDto)
+        return this.classroomService.findAllPaginated(paginationQueryDto, profile)
     }
 
-    @Patch(':id')
+    @Get(':classroomId')
+    getClassroom(
+        @Param('classroomId', ParseIntPipe) classroomId: number,
+        @GetUserProfile() profile: UserProfileDto
+    ): Promise<PaginationResponseDto<ResponseClassroomDto>>{
+        return this.classroomService.findOne(classroomId, profile)
+    }
+
+    @Patch(':classroomId')
     @Roles(Role.TEACHER)
     updateClassroom(
-        @Param('id', ParseIntPipe) id: number,
-        @Body() updateClassroomDto: UpdateClassroomDto
+        @Param('classroomId', ParseIntPipe) classroomId: number,
+        @Body() updateClassroomDto: UpdateClassroomDto,
+        @GetUserProfile() profile: UserProfileDto
     ): Promise<ResponseClassroomDto>{
-        return this.classroomService.updateById(id, updateClassroomDto)
+        return this.classroomService.updateById(classroomId, updateClassroomDto, profile)
     }
 
-    @Delete(':id')
+    @Delete(':classroomId')
     @Roles(Role.TEACHER)
-    deleteById(@Param('id', ParseIntPipe) id: number): Promise<MessageResponseDto>{
-        return this.classroomService.deleteById(id)
+    deleteById(
+        @Param('classroomId', ParseIntPipe) id: number,
+        @GetUserProfile() profile: UserProfileDto
+    ): Promise<MessageResponseDto>{
+        return this.classroomService.deleteById(id, profile)
     }
 
-    @Post(':id/generateCode')
+    @Post(':classroomId/generateEnrollmentCode')
     @Roles(Role.TEACHER)
-    generateCode(
-        @Param('id', ParseIntPipe) id: number,
-        @Body() generateCodeDto: GenerateCodeDto
+    generateEnrollmentCode(
+        @Param('classroomId', ParseIntPipe) classroomId: number,
+        @Body() generateCodeDto: GenerateCodeDto,
+        @GetUserProfile() profile: UserProfileDto
     ){
-        return this.classroomService.generateEnrollmentCode(id, generateCodeDto)
+        return this.classroomService.generateEnrollmentCode(classroomId, generateCodeDto, profile)
     }
 
     @Post('inviteCode/:code')
     @Roles(Role.STUDENT)
-    inviteCode(
+    joinClassroomByCode(
         @Param('code') inviteCode: string,
-        @GetStudentId() studentId
+        @GetUserProfile() profile: UserProfileDto
     ){
-        return this.classroomService.accessCode(inviteCode, studentId)
+        return this.classroomService.enrollByCode(inviteCode, profile.profileId)
+    }
+    //!Lesson
+    @Post(':classroomId/lessons')
+    @Roles(Role.TEACHER)
+    createLesson(
+        @Param('classroomId', ParseIntPipe) classroomId: number,
+        @Body() createLessonDto: CreateLessonDto,
+        @GetUserProfile() profile: UserProfileDto
+    ): Promise<ResponseLessonDto>{
+        console.log(profile)
+        return this.lessonService.create(createLessonDto, profile , classroomId)
+    }
+
+    @Get(':classroomId/lessons')
+    getLessonsByClassroomId(
+        @Param('classroomId', ParseIntPipe) classroomId: number,
+        @GetUserProfile() profile: UserProfileDto
+    ){
+        return this.lessonService.findAllLessonByClassroomId(classroomId, profile)
+    }
+    //!Post
+    @Post(':classroomId/post')
+    @Roles(Role.TEACHER)
+    createPost(
+        @Param('classroomId', ParseIntPipe) classroomId: number,
+        @Body() createPostDto: CreatePostDto,
+        @GetUserProfile() profile: UserProfileDto
+    ){
+        return this.postService.create(classroomId, createPostDto, profile)
+    }
+
+    @Get(':classroomId/post')
+    getPostsByClassroomId(
+        @Param('classroomId', ParseIntPipe) classroomId: number,
+        @GetUserProfile() profile: UserProfileDto
+    ){
+        return this.postService.findAllPostByClassroomId(classroomId, profile)
+    }
+    //!Student
+    @Get(':classroomId/students')
+    getStudentsByClassroomId(
+        @Param('classroomId', ParseIntPipe) classroomId: number,
+        @GetUserProfile() profile: UserProfileDto
+    ){
+        return this.classroomService.findAllStudentByClassroomId(classroomId, profile)
     }
 }
