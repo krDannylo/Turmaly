@@ -9,6 +9,7 @@ import { PostModule } from '../post/post.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { UserModule } from '../user/user.module';
 import { StudentModule } from '../student/student.module';
+import { LlmModule } from '../llm/llm.module';
 
 @Module({
   imports: [
@@ -18,7 +19,8 @@ import { StudentModule } from '../student/student.module';
     ClassModule,
     LessonModule,
     PostModule,
-    StudentModule
+    StudentModule,
+    LlmModule
     // ScheduleModule.forRoot(),
   ],
   controllers: [AppController],

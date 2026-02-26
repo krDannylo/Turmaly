@@ -122,7 +122,7 @@ export class LessonService {
 
         const data: { startAt?: Date, endAt?: Date } = {}
         if (updateLessonDto.startAt) data.startAt = startAt;
-        if (updateLessonDto.endAt) data.endAt = endAt;        
+        if (updateLessonDto.endAt) data.endAt = endAt;
 
         const updateLesson = await this.prisma.lesson.update({
             where: { id: existingLesson.id },

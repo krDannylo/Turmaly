@@ -102,6 +102,7 @@ model Post {
   title           String        
   content         String?
   isPinned        Boolean       @default(false)
+  priority        Boolean       @default(false)
 
   teacherId       Int
   teacher         Teacher       @relation(fields: [teacherId], references: [id])

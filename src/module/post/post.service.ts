@@ -4,6 +4,8 @@ import { CreatePostDto } from "./dto/create-post.dto";
 import { UpdatePostDto } from "./dto/update-post-dto";
 import { UserProfileDto } from "../user/dto/user-profile.dto";
 import { UserRole } from "@prisma/client";
+import { ParamsResponse } from "../llm/types/params.types";
+import { buildPostWhere } from "../llm/mapper/post-query.mapper";
 
 @Injectable()
 export class PostService {
@@ -116,6 +118,21 @@ export class PostService {
         if (!post) throw new HttpException("Post not found", HttpStatus.NOT_FOUND)
 
         return post
+    }
+
+    async findByParams(params: ParamsResponse){
+        const where = buildPostWhere(params)
+        return this.prisma.post.findMany({ where })
+    }
+
+    async findManyByPostId(postIds: []){
+        return await this.prisma.post.findMany({
+            where: {
+                id: {
+                    in: postIds
+                }
+            }
+        })
     }
 
     async updateById(id: number, updatePostDto: UpdatePostDto, profile: UserProfileDto){
