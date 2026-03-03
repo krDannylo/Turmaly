@@ -4,6 +4,7 @@ import { AppModule } from './module/app/app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { SanitizePipe } from './common/pipes/sanitize.pipe';
 import helmet from 'helmet';
 
 
@@ -26,7 +27,7 @@ async function bootstrap() {
       forbidNonWhitelisted: true,
       transform: true,
     }),
-    // new SanitizePipe()
+    new SanitizePipe()
   )
 
   const config = new DocumentBuilder()

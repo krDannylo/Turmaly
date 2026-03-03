@@ -8,6 +8,8 @@ import { PostModule } from '../post/post.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { UserModule } from '../user/user.module';
 import { LlmModule } from '../llm/llm.module';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
 
 @Module({
   imports: [
@@ -16,10 +18,17 @@ import { LlmModule } from '../llm/llm.module';
     ClassModule,
     LessonModule,
     PostModule,
-    LlmModule
+    LlmModule,
     // ScheduleModule.forRoot(),
+    ThrottlerModule.forRoot({
+      throttlers: [{
+        ttl: 60000,
+        limit: 30,
+        blockDuration: 30000,
+      }]
+    })
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, { provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
 export class AppModule {}
