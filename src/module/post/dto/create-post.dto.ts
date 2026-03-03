@@ -13,4 +13,8 @@ export class CreatePostDto {
     @IsBoolean()
     @IsOptional()
     readonly isPinned: boolean
+
+    @IsBoolean()
+    @IsOptional()
+    readonly priority: boolean
 }

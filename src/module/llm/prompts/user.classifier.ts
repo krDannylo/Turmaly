@@ -6,10 +6,16 @@ const intentsList = Object.entries(INTENTS)
   .join('\n');
 
 const paramsList = Object.entries(PARAMS_SYSTEM)
-  .map(([key, value]) => `- ${key}
-    Descrição: ${value.description}
-    Valores Permitidos: ${value.allowedValues.map(v => `  - ${v}`).join('\n')}
-  `)
+  .map(([key, value]) => {
+    const allowed = 'allowedValues' in value && value.allowedValues
+      ? `Valores Permitidos:\n${value.allowedValues.map(v => `  - ${v}`).join('\n')}`
+      : '';
+
+    return `- ${key}
+  Descrição: ${value.description}
+  ${allowed}
+`;
+  })
   .join('\n');
 
 export const buildUserPrompt = (question: string) => `

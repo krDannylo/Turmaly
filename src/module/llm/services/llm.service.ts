@@ -29,25 +29,27 @@ export class LlmService {
         })
 
         const raw = res.choices[0].message.content ?? JSON.stringify(LLM_DEFAULT_VALUE);
+        console.log(raw)
         try{
             const parsed = JSON.parse(raw);
             return {
                 intent: typeof parsed.intent === 'string' ? parsed.intent : "UNKNOWN",
-                params: parsed.params || {}
+                params: parsed.params || {},
+                reason: typeof parsed.reason === 'string' ? parsed.reason : "No reason provided",
             } as IntentResponse;
         } catch(err){
             return LLM_DEFAULT_VALUE;
         }
      }
 
-     async analyzePostsContent(message: string, posts: any[]): Promise<{found: boolean, postIds: []}>{
-        // const formattedPosts = posts.map(post => ({
-        //     id: post.id,
-        //     title: post.title,
-        //     content: post.content
-        // }));
+     async analyzePostsContent(message: string, posts: any[]): Promise<{found: boolean, postIds: number[]}>{
+        const formattedPosts = posts.map(post => ({
+            id: post.id,
+            title: post.title,
+            content: post.content
+        }));
 
-        const userPrompt = buildAnalyzePostsPrompt(message, posts)
+        const userPrompt = buildAnalyzePostsPrompt(message, formattedPosts)
 
         const res = await this.client.chat.completions.create({
             model: 'gpt-4o-mini',

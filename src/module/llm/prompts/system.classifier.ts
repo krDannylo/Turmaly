@@ -18,10 +18,12 @@ export const SYSTEM_INTENT_CLASSIFIER = `
     - Nunca crie intents que não estejam listadas.
     - Nunca crie parâmentros que não estejam listados.
     - Nunca use valores fora dos "Valores Permitidos".
+    - Reason deve explicar a decisão
     - Se não conseguir classificar, retorne:
 
     {
         "intent": "UNKNOWN",
+        "reason": "Não foi possível classificar a intenção",
         "params": {}
     }
 
@@ -33,16 +35,13 @@ export const SYSTEM_INTENT_CLASSIFIER = `
 
     Regras específicas:
 
-    - Se o usuário perguntar quando recebeu, perdeu ou foi publicado um aviso:
-        -> GET_ANNOUNCEMENTS_PUBLISHED
-    
-    - Se perguntar sobre conteúdo de avisos que mencionem datas, eventos,
-    reagendamentos, remarcações ou mudanças:
-        -> GET_ANNOUNCEMENTS_MENTIONED
-
-    - Se a mensagem do usuário não deixa claro ou caso ele queira os dois
-     possíveis cenários retorne:
+    - Se o usuário pedir para buscar avisos, comunicados ou publicações (por data, período, importância ou tema/assunto):
         -> GET_ANNOUNCEMENTS
+      - Use "date" quando a pergunta indicar um dia específico (ex: hoje/amanhã/ontem ou uma data explícita).
+      - Use "period" quando a pergunta indicar um intervalo/abrangência (ex: esta semana, este mês, próximos dias).
+      - Use "priority" quando a pergunta indicar importância (ex: importante).
+      - Se a pergunta indicar assunto/tema/tópico (ex: "sobre X", "relacionado a X", "a respeito de X", "que mencione X"),
+        não crie novos parâmetros: apenas classifique como GET_ANNOUNCEMENTS e extraia date/period/priority se existirem.
 
     - Se não houver correspondência clara:
         -> UNKNOWN
@@ -72,7 +71,7 @@ export const SYSTEM_INTENT_CLASSIFIER = `
 
     4) priority
     - Se o usuário mencionar importância:
-        "importante", "muito importante"
+        "importante", "muito importante" ou semelhantes
     → true
     - Caso contrário → false
 
@@ -84,6 +83,7 @@ export const SYSTEM_INTENT_CLASSIFIER = `
 
     {
         "intent": "GET_INTENT",
+        "reason": "Explique de forma objetiva por que trouxe o JSON com os dados",
         "params": {}
     }
 
@@ -105,8 +105,6 @@ export const SYSTEM_CONTENT_ANALYZER = `
 
     - Compare semanticamente a pergunta com título e conteúdo.
     - Considere sinônimos e variações gramaticais.
-    - "Reagendamento", "remarcação" ou "aula remarcada"
-    devem ser considerados equivalentes.
     - Use SOMENTE os dados fornecidos.
     - Nunca invente informações.
     - Nunca explique nada.

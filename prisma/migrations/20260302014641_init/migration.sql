@@ -78,6 +78,7 @@ CREATE TABLE "Post" (
     "title" TEXT NOT NULL,
     "content" TEXT,
     "isPinned" BOOLEAN NOT NULL DEFAULT false,
+    "priority" BOOLEAN NOT NULL DEFAULT false,
     "teacherId" INTEGER NOT NULL,
     "classroomId" INTEGER NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,

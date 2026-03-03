@@ -27,6 +27,7 @@ export class PostService {
             data: {
                 title: createPostDto.title,
                 isPinned: createPostDto.isPinned ?? false,
+                priority: createPostDto.priority,
                 classroomId: existingClassroom.id,
                 teacherId: profile.profileId ,
 
@@ -125,7 +126,7 @@ export class PostService {
         return this.prisma.post.findMany({ where })
     }
 
-    async findManyByPostId(postIds: []){
+    async findManyByPostId(postIds: number[]){
         return await this.prisma.post.findMany({
             where: {
                 id: {
@@ -144,10 +145,12 @@ export class PostService {
             title?: string
             content?: string | null
             isPinned?: boolean
+            priority?: boolean
         } = {
             title: updatePostDto.title ?? existingPost.title,
             isPinned: updatePostDto.isPinned ?? existingPost.isPinned,
             content: updatePostDto.content ?? existingPost.content,
+            priority: updatePostDto.priority ?? existingPost.priority,
         }
 
         const updatedPost = await this.prisma.post.update({
@@ -158,6 +161,7 @@ export class PostService {
                 title: true,
                 content: true,
                 isPinned: true,
+                priority: true,
             }
         })
 
