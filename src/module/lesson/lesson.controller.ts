@@ -22,8 +22,8 @@ export class LessonController {
     getById(
         @Param('lessonId', ParseIntPipe) lessonId: number,
         @GetUserProfile() profile: UserProfileDto
-    ) {
-        return this.lessonService.findOne(lessonId, profile)
+    ): Promise<ResponseLessonDto> {
+        return this.lessonService.findOne(lessonId, profile);
     }
 
     @Patch(':lessonsId')
@@ -32,8 +32,8 @@ export class LessonController {
         @Param('lessonsId', ParseIntPipe) id: number,
         @Body() updateLessonDto: UpdateLessonDto,
         @GetUserProfile() profile: UserProfileDto
-    ): Promise<ResponseLessonDto>{
-        return this.lessonService.updateById(id, updateLessonDto, profile) 
+    ): Promise<ResponseLessonDto> {
+        return this.lessonService.updateById(id, updateLessonDto, profile);
     }
 
     @Delete(':lessonsId')
@@ -42,6 +42,6 @@ export class LessonController {
         @Param('lessonsId', ParseIntPipe) id: number,
         @GetUserProfile() profile: UserProfileDto
     ): Promise<MessageResponseDto> {
-        return this.lessonService.deleteById(id, profile)
+        return this.lessonService.deleteById(id, profile);
     }
 }

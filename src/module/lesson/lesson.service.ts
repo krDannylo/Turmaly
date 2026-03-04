@@ -7,6 +7,7 @@ import { UserRole } from "../auth/common/user-type.enum";
 import { ClassNotFoundException } from "../class/exceptions/class.exception";
 import { LessonNotFoundException } from "./exception/lesson.exception";
 import { InvalidDateException } from "src/common/exceptions/common.exception";
+import { ResponseLessonDto } from "./dto/response-lesson.dto";
 
 @Injectable()
 export class LessonService {
@@ -86,18 +87,20 @@ export class LessonService {
         return lesson
     }
 
-    async findAllLessonByClassroomId(classroomId: number, profile: UserProfileDto) {
+    async findAllLessonByClassroomId(classroomId: number, profile: UserProfileDto): Promise<ResponseLessonDto[]> {
+        let lessons: ResponseLessonDto[] = [];
+
         if(profile.role === UserRole.TEACHER) {
-            return await this.prisma.lesson.findMany({
+            lessons = await this.prisma.lesson.findMany({
                 where: {
                     classroomId,
                     classroom: {
                         teacherId: profile.profileId
                     }
                 }
-            })
+            });
         } else if (profile.role === UserRole.STUDENT) {
-            return await this.prisma.lesson.findMany({
+            lessons = await this.prisma.lesson.findMany({
                 where: {
                     classroomId,
                     classroom: {
@@ -108,9 +111,10 @@ export class LessonService {
                         }
                     }
                 }
-            })
+            });
         }
-        // return lessons.map(lesson => new ResponseLessonDto(lesson));
+
+        return lessons;
     }
 
     async updateById(id: number, updateLessonDto: UpdateLessonDto, profile: UserProfileDto){

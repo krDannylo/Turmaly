@@ -8,6 +8,8 @@ import { UserRole } from '@prisma/client';
 import jwtConfig from "./config/jwt.config";
 import type { ConfigType } from '@nestjs/config';
 import { EmailAlreadyInUseException, InvalidCredentialsException, InvalidRoleException, UserNotFoundException } from "./exceptions/auth.exception";
+import { SignInResponseDto } from "./dto/sign-in-response.dto";
+import { SignUpResponseDto } from "./dto/sign-up-response.dto";
 
 @Injectable()
 export class AuthService {
@@ -21,7 +23,7 @@ export class AuthService {
         
     ){ }
 
-    private async generateToken(user: {id: number; email: string}, role: UserRole) {
+    private async generateToken(user: {id: number; email: string}, role: UserRole): Promise<string> {
         return this.jwtService.signAsync(
             {
                 sub: user.id,
@@ -37,7 +39,7 @@ export class AuthService {
         )
     }
 
-    async authenticate(signInDto: SignInDto) {
+    async authenticate(signInDto: SignInDto): Promise<SignInResponseDto> {
         const { email, password } = signInDto;
 
         const user = await this.prisma.user.findUnique({
@@ -64,10 +66,10 @@ export class AuthService {
             email: user.email,
             role: user.role,
             token
-        }
+        };
     }
 
-    async register(singUpDto: SignUpDto) {
+    async register(singUpDto: SignUpDto): Promise<SignUpResponseDto> {
         const { name, email, password } = singUpDto;
         const role = singUpDto.role.toLocaleUpperCase() as UserRole;
 
@@ -75,18 +77,15 @@ export class AuthService {
 
         if(!allowedRoles.includes(role)) throw new InvalidRoleException();
         
-
         const userExists = await this.prisma.user.findUnique({
             where: { email },
         });
 
-        if (userExists) {
-            throw new EmailAlreadyInUseException();
-        }
+        if (userExists) throw new EmailAlreadyInUseException();
 
         const passwordHash = await this.hashingService.hash(password);
 
-        const [user, profile] = await this.prisma.$transaction(async (prisma) => {
+        const [user] = await this.prisma.$transaction(async (prisma) => {
             const createdUser = await prisma.user.create({
                 data: {
                 name,
@@ -109,8 +108,8 @@ export class AuthService {
                 });
             }
 
-            return [createdUser, createdProfile]
-        })
+            return [createdUser, createdProfile];
+        });
 
         return {
             id: user.id,

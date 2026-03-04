@@ -18,6 +18,7 @@ import { ResponseLessonDto } from "../lesson/dto/response-lesson.dto";
 import { LessonService } from "../lesson/lesson.service";
 import { CreatePostDto } from "../post/dto/create-post.dto";
 import { PostService } from "../post/post.service";
+import { ResponsePostDto } from "../post/dto/response-post.dto";
 
 @UseGuards(AuthTokenGuard, RoleGuard, ProfileGuard)
 @Controller('/classroom')
@@ -34,24 +35,24 @@ export class ClassroomController {
     createClassroom(
         @Body() createClassroomDto: CreateClassroomDto,
         @GetUserProfile() profile: UserProfileDto
-    ){
-        return this.classroomService.create(createClassroomDto, profile)
+    ): Promise<ResponseClassroomDto> {
+        return this.classroomService.create(createClassroomDto, profile);
     }
 
     @Get()
     getClassrooms(
         @Query() paginationQueryDto: PaginationQueryDto,
         @GetUserProfile() profile: UserProfileDto
-    ): Promise<PaginationResponseDto<ResponseClassroomDto>>{
-        return this.classroomService.findAllPaginated(paginationQueryDto, profile)
+    ): Promise<PaginationResponseDto<ResponseClassroomDto>> {
+        return this.classroomService.findAllPaginated(paginationQueryDto, profile);
     }
 
     @Get(':classroomId')
     getClassroom(
         @Param('classroomId', ParseIntPipe) classroomId: number,
         @GetUserProfile() profile: UserProfileDto
-    ): Promise<PaginationResponseDto<ResponseClassroomDto>>{
-        return this.classroomService.findOne(classroomId, profile)
+    ): Promise<ResponseClassroomDto> {
+        return this.classroomService.findOne(classroomId, profile);
     }
 
     @Patch(':classroomId')
@@ -60,8 +61,8 @@ export class ClassroomController {
         @Param('classroomId', ParseIntPipe) classroomId: number,
         @Body() updateClassroomDto: UpdateClassroomDto,
         @GetUserProfile() profile: UserProfileDto
-    ): Promise<ResponseClassroomDto>{
-        return this.classroomService.updateById(classroomId, updateClassroomDto, profile)
+    ): Promise<ResponseClassroomDto> {
+        return this.classroomService.updateById(classroomId, updateClassroomDto, profile);
     }
 
     @Delete(':classroomId')
@@ -69,8 +70,8 @@ export class ClassroomController {
     deleteById(
         @Param('classroomId', ParseIntPipe) id: number,
         @GetUserProfile() profile: UserProfileDto
-    ): Promise<MessageResponseDto>{
-        return this.classroomService.deleteById(id, profile)
+    ): Promise<MessageResponseDto> {
+        return this.classroomService.deleteById(id, profile);
     }
 
     @Post(':classroomId/generateEnrollmentCode')
@@ -79,8 +80,8 @@ export class ClassroomController {
         @Param('classroomId', ParseIntPipe) classroomId: number,
         @Body() generateCodeDto: GenerateCodeDto,
         @GetUserProfile() profile: UserProfileDto
-    ){
-        return this.classroomService.generateEnrollmentCode(classroomId, generateCodeDto, profile)
+    ): Promise<any> {
+        return this.classroomService.generateEnrollmentCode(classroomId, generateCodeDto, profile);
     }
 
     @Post('inviteCode/:code')
@@ -88,8 +89,8 @@ export class ClassroomController {
     joinClassroomByCode(
         @Param('code') inviteCode: string,
         @GetUserProfile() profile: UserProfileDto
-    ){
-        return this.classroomService.enrollByCode(inviteCode, profile.profileId)
+    ): Promise<any> {
+        return this.classroomService.enrollByCode(inviteCode, profile.profileId);
     }
     //!Lesson
     @Post(':classroomId/lessons')
@@ -98,17 +99,17 @@ export class ClassroomController {
         @Param('classroomId', ParseIntPipe) classroomId: number,
         @Body() createLessonDto: CreateLessonDto,
         @GetUserProfile() profile: UserProfileDto
-    ): Promise<ResponseLessonDto>{
-        console.log(profile)
-        return this.lessonService.create(createLessonDto, profile , classroomId)
+    ): Promise<ResponseLessonDto> {
+        console.log(profile);
+        return this.lessonService.create(createLessonDto, profile , classroomId);
     }
 
     @Get(':classroomId/lessons')
     getLessonsByClassroomId(
         @Param('classroomId', ParseIntPipe) classroomId: number,
         @GetUserProfile() profile: UserProfileDto
-    ){
-        return this.lessonService.findAllLessonByClassroomId(classroomId, profile)
+    ): Promise<ResponseLessonDto[]> {
+        return this.lessonService.findAllLessonByClassroomId(classroomId, profile);
     }
     //!Post
     @Post(':classroomId/post')
@@ -117,23 +118,23 @@ export class ClassroomController {
         @Param('classroomId', ParseIntPipe) classroomId: number,
         @Body() createPostDto: CreatePostDto,
         @GetUserProfile() profile: UserProfileDto
-    ){
-        return this.postService.create(classroomId, createPostDto, profile)
+    ): Promise<ResponsePostDto> {
+        return this.postService.create(classroomId, createPostDto, profile);
     }
 
     @Get(':classroomId/post')
     getPostsByClassroomId(
         @Param('classroomId', ParseIntPipe) classroomId: number,
         @GetUserProfile() profile: UserProfileDto
-    ){
-        return this.postService.findAllPostByClassroomId(classroomId, profile)
+    ): Promise<ResponsePostDto[]> {
+        return this.postService.findAllPostByClassroomId(classroomId, profile);
     }
     //!Student
     @Get(':classroomId/students')
     getStudentsByClassroomId(
         @Param('classroomId', ParseIntPipe) classroomId: number,
         @GetUserProfile() profile: UserProfileDto
-    ){
-        return this.classroomService.findAllStudentByClassroomId(classroomId, profile)
+    ): Promise<any[]> {
+        return this.classroomService.findAllStudentByClassroomId(classroomId, profile);
     }
 }

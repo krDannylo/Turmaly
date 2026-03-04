@@ -7,6 +7,8 @@ import { UserProfileDto } from "./dto/user-profile.dto";
 import { UserService } from "./user.service";
 import { UpdateUserDto } from "./dto/update-user.dto";
 import { UpdatePasswordDto } from "./dto/update-password.dto";
+import { MeProfileResponseDto } from "./dto/me-profile-response.dto";
+import { UpdateMeResponseDto } from "./dto/update-me-response.dto";
 
 @UseGuards(AuthTokenGuard, RoleGuard, ProfileGuard)
 @Controller('/me')
@@ -18,23 +20,23 @@ export class UserController {
     @Get()
     getProfile(
         @GetUserProfile() profile: UserProfileDto
-    ){
-        return this.userService.getUserProfile(profile.userId)
+    ): Promise<MeProfileResponseDto> {
+        return this.userService.getUserProfile(profile.userId);
     }
 
     @Patch()
     updateProfile(
         @GetUserProfile() profile: UserProfileDto,
         @Body() updateUserDto: UpdateUserDto
-    ){
-        return this.userService.updateMe(profile, updateUserDto)
+    ): Promise<UpdateMeResponseDto> {
+        return this.userService.updateMe(profile, updateUserDto);
     }
 
     @Patch('/password')
     updatePassword(
         @GetUserProfile() profile: UserProfileDto,
         @Body() password: UpdatePasswordDto,
-    ){
-        return this.userService.updatePassword(profile, password)
+    ): Promise<string> {
+        return this.userService.updatePassword(profile, password);
     }
 }

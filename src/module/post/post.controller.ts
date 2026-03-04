@@ -24,8 +24,8 @@ export class PostController {
     getById(
         @Param('postId', ParseIntPipe) lessonId: number,
         @GetUserProfile() profile: UserProfileDto
-    ) {
-        return this.postService.findOne(lessonId, profile)
+    ): Promise<ResponsePostDto> {
+        return this.postService.findOne(lessonId, profile);
     }
 
     @Patch(':postId')
@@ -35,7 +35,7 @@ export class PostController {
         @Body() updatePostDto: UpdatePostDto,
         @GetUserProfile() profile: UserProfileDto
     ): Promise<ResponsePostDto> {
-        return this.postService.updateById(id, updatePostDto, profile)
+        return this.postService.updateById(id, updatePostDto, profile);
     }
 
     @Delete(':id')
@@ -44,6 +44,6 @@ export class PostController {
         @Param('id', ParseIntPipe) id: number,
         @GetUserProfile() profile: UserProfileDto
     ): Promise<MessageResponseDto>{
-        return this.postService.deleteById(id, profile)
+        return this.postService.deleteById(id, profile);
     }
 }

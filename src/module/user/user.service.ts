@@ -5,6 +5,8 @@ import { UpdateUserDto } from "./dto/update-user.dto";
 import { UserProfileDto } from "./dto/user-profile.dto";
 import { HashingServiceProtocol } from "src/common/hash/hashing.service";
 import { UpdatePasswordDto } from "./dto/update-password.dto";
+import { MeProfileResponseDto } from "./dto/me-profile-response.dto";
+import { UpdateMeResponseDto } from "./dto/update-me-response.dto";
 
 @Injectable()
 export class UserService {
@@ -13,7 +15,7 @@ export class UserService {
         private readonly hashingService: HashingServiceProtocol,
     ) {}
 
-  async getUserProfile(userId: number) {
+  async getUserProfile(userId: number): Promise<MeProfileResponseDto> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       include: { teacher: true, student: true },
@@ -35,7 +37,7 @@ export class UserService {
     };
   }
 
-  async updateMe(profile: UserProfileDto, updateUserDto: UpdateUserDto){
+  async updateMe(profile: UserProfileDto, updateUserDto: UpdateUserDto): Promise<UpdateMeResponseDto>{
     const me = await this.getUserProfile(profile.userId)
 
     const updateDate: {
@@ -59,7 +61,7 @@ export class UserService {
       }
     })
 
-    return myProfile;
+    return myProfile as UpdateMeResponseDto;
   }
 
   async updatePassword(profile: UserProfileDto, passwordDto: UpdatePasswordDto){
