@@ -7,6 +7,7 @@ import { SignInDto } from './dto/sign-in.dto';
 import { UserRole } from '@prisma/client';
 import jwtConfig from "./config/jwt.config";
 import type { ConfigType } from '@nestjs/config';
+import { EmailAlreadyInUseException, InvalidCredentialsException, InvalidRoleException, UserNotFoundException } from "./exceptions/auth.exception";
 
 @Injectable()
 export class AuthService {
@@ -47,14 +48,14 @@ export class AuthService {
             }
         })
 
-        if(!user) throw new HttpException("Dados não encontrados", HttpStatus.NOT_FOUND);
+        if(!user) throw new UserNotFoundException();
 
         const passwordIsValid = await this.hashingService.compare(
             password,
             user.password
         );
 
-        if (!passwordIsValid) throw new HttpException("Senha/Usuário Incorretos", HttpStatus.BAD_REQUEST);
+        if (!passwordIsValid) throw new InvalidCredentialsException();
         
         const token = await this.generateToken(user, user.role)
 
@@ -72,20 +73,15 @@ export class AuthService {
 
         const allowedRoles: UserRole[] = [UserRole.STUDENT, UserRole.TEACHER];
 
-        if(!allowedRoles.includes(role)) {
-            throw new HttpException("Role Invalid", HttpStatus.BAD_REQUEST);
-        }
-
-        if(!email || !password) {
-            throw new HttpException("Body Failed", HttpStatus.BAD_REQUEST);
-        }
+        if(!allowedRoles.includes(role)) throw new InvalidRoleException();
+        
 
         const userExists = await this.prisma.user.findUnique({
             where: { email },
         });
 
         if (userExists) {
-            throw new HttpException("Email Conflict", HttpStatus.CONFLICT);
+            throw new EmailAlreadyInUseException();
         }
 
         const passwordHash = await this.hashingService.hash(password);

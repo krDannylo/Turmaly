@@ -10,7 +10,7 @@ export class LlmController {
     @Get('test-ai')
     async test() {
         return await this.chatService.handleMessage(
-            'Teve algum aviso importante relacionado a violão nesses dias?'
+            ''
         )
     }
 }

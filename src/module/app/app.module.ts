@@ -9,7 +9,9 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { UserModule } from '../user/user.module';
 import { LlmModule } from '../llm/llm.module';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_FILTER, APP_GUARD } from '@nestjs/core';
+import { AppLoggerModule } from 'src/common/logger/logger.module';
+import { GlobalExceptionFilter } from 'src/common/filters/global-exception.filter';
 
 @Module({
   imports: [
@@ -20,6 +22,7 @@ import { APP_GUARD } from '@nestjs/core';
     PostModule,
     LlmModule,
     // ScheduleModule.forRoot(),
+    AppLoggerModule,
     ThrottlerModule.forRoot({
       throttlers: [{
         ttl: 60000,
@@ -29,6 +32,10 @@ import { APP_GUARD } from '@nestjs/core';
     })
   ],
   controllers: [AppController],
-  providers: [AppService, { provide: APP_GUARD, useClass: ThrottlerGuard }],
+  providers: [
+    AppService, 
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
+    { provide: APP_FILTER, useClass: GlobalExceptionFilter}
+  ],
 })
 export class AppModule {}

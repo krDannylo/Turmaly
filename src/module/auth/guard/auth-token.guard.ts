@@ -4,6 +4,7 @@ import { JwtService } from "@nestjs/jwt";
 import jwtConfig from "../config/jwt.config";
 import type { ConfigType } from "@nestjs/config";
 import { REQUEST_TOKEN_PAYLOAD_NAME } from "../common/auth.constants";
+import { InvalidTokenException, TokenNotFoundException } from "../exceptions/auth.exception";
 
 export class AuthTokenGuard implements CanActivate {
   constructor(
@@ -17,7 +18,7 @@ export class AuthTokenGuard implements CanActivate {
     const token = this.extractTokenFromHeader(request);
 
     if (!token) {
-      throw new UnauthorizedException("Token não encontrado")
+      throw new TokenNotFoundException()
     }
 
     try {
@@ -33,7 +34,7 @@ export class AuthTokenGuard implements CanActivate {
       return true;
     }
     catch (e) {
-      throw new UnauthorizedException("Acesso negado")
+      throw new InvalidTokenException()
     }
   }
 

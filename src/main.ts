@@ -7,7 +7,6 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { SanitizePipe } from './common/pipes/sanitize.pipe';
 import helmet from 'helmet';
 
-
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.use(helmet())

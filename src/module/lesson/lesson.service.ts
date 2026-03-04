@@ -4,6 +4,9 @@ import { CreateLessonDto } from "./dto/create-lesson.dto";
 import { UpdateLessonDto } from "./dto/update-lesson.dto";
 import { UserProfileDto } from "../user/dto/user-profile.dto";
 import { UserRole } from "../auth/common/user-type.enum";
+import { ClassNotFoundException } from "../class/exceptions/class.exception";
+import { LessonNotFoundException } from "./exception/lesson.exception";
+import { InvalidDateException } from "src/common/exceptions/common.exception";
 
 @Injectable()
 export class LessonService {
@@ -19,10 +22,10 @@ export class LessonService {
             }
         })
 
-        if (!existingClassroom) throw new HttpException("Classroom not found", HttpStatus.NOT_FOUND)
+        if (!existingClassroom) throw new ClassNotFoundException()
 
         if (!(createLessonDto.startAt.getTime() < createLessonDto.endAt.getTime())){
-            throw new HttpException("Date Invalid", HttpStatus.BAD_REQUEST)
+            throw new InvalidDateException()
         }
 
         const lesson = await this.prisma.lesson.create({
@@ -78,7 +81,7 @@ export class LessonService {
             })
         }
 
-        if (!lesson) throw new HttpException("Lesson not found", HttpStatus.NOT_FOUND)
+        if (!lesson) throw new LessonNotFoundException()
 
         return lesson
     }
@@ -113,7 +116,7 @@ export class LessonService {
     async updateById(id: number, updateLessonDto: UpdateLessonDto, profile: UserProfileDto){
         const existingLesson = await this.findOne(id, profile)
 
-        if(!existingLesson) throw new HttpException("Lesson not found", HttpStatus.NOT_FOUND)
+        if(!existingLesson) throw new LessonNotFoundException()
 
         const startAt: Date = updateLessonDto.startAt ?? existingLesson.startAt
         const endAt: Date = updateLessonDto.endAt ?? existingLesson.endAt
@@ -140,7 +143,7 @@ export class LessonService {
     async deleteById(id: number, profile: UserProfileDto) {
         const existingLesson = await this.findOne(id, profile)
 
-        if (!existingLesson) throw new HttpException("Lesson not found", HttpStatus.NOT_FOUND)
+        if (!existingLesson) throw new LessonNotFoundException()
 
         await this.prisma.lesson.delete({
             where: { id }

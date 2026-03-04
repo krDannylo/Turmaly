@@ -8,6 +8,7 @@ import { PaginationQueryDto } from "src/common/dto/pagination.dto";
 import { GenerateCodeDto } from "./dto/generate-code.dto";
 import { generateAccessCode } from "src/common/utils/generate-access-code.util";
 import { UserRole } from "../auth/common/user-type.enum";
+import { ClassNameConflictException, ClassNotFoundException, EnrollmentCodeConflictException, EnrollmentCodeNotFoundException, ExpiredEnrollmentCodeException, InvalidEnrollmentCodeException } from './exceptions/class.exception';
 
 @Injectable()
 export class ClassroomService {
@@ -23,7 +24,7 @@ export class ClassroomService {
             }
         })
 
-        if (existingClassroom) throw new HttpException("Classroom already Exist", HttpStatus.CONFLICT)
+        if (existingClassroom) throw new ClassNameConflictException()
 
         const classroom = await this.prisma.classroom.create({
             data: {
@@ -67,7 +68,7 @@ export class ClassroomService {
             })
         }
 
-        if (!classroom) throw new HttpException("Classroom not found", HttpStatus.NOT_FOUND)
+        if (!classroom) throw new ClassNotFoundException()
 
         return classroom
     }
@@ -144,7 +145,7 @@ export class ClassroomService {
             })
 
             if (!classroom) {
-            throw new ForbiddenException()
+                throw new ForbiddenException()
             }
 
         } else if (profile.role === UserRole.STUDENT) {
@@ -156,7 +157,7 @@ export class ClassroomService {
             })
 
             if (!isInClassroom) {
-            throw new ForbiddenException()
+                throw new ForbiddenException()
             }
         }
 
@@ -186,7 +187,7 @@ export class ClassroomService {
     async updateById(id: number, updateClassroomDto: UpdateClassroomDto, profile: UserProfileDto) {
         const existingClassroom = await this.findOne(id, profile)
 
-        if (!existingClassroom) throw new HttpException("Classroom not found", HttpStatus.NOT_FOUND)
+        if (!existingClassroom) throw new ClassNotFoundException()
 
         const updateData: { name?: string, type?: ClassroomType } = {
             name: updateClassroomDto.name ? updateClassroomDto.name : existingClassroom.name,
@@ -209,7 +210,7 @@ export class ClassroomService {
     async deleteById(id: number, profile: UserProfileDto) {
         const existingClassroom = await this.findOne(id, profile)
 
-        if (!existingClassroom) throw new HttpException("Classroom not found", HttpStatus.NOT_FOUND)
+        if (!existingClassroom) throw new ClassNotFoundException()
 
         await this.prisma.classroom.delete({
             where: { id }
@@ -225,12 +226,12 @@ export class ClassroomService {
         const now = new Date();
         const existingClassroom = await this.findOne(classroomId, profile)
 
-        if (!existingClassroom) throw new HttpException("Classroom not found", HttpStatus.NOT_FOUND)
+        if (!existingClassroom) throw new ClassNotFoundException()
         
         const accessCode = generateCodeDto.code ?? generateAccessCode()
 
         const existingCode = await this.findOneCode(accessCode)
-        if(existingCode) throw new HttpException("Code already exist", HttpStatus.BAD_REQUEST)
+        if(existingCode) throw new EnrollmentCodeConflictException()
 
         let expireCode: Date;
 
@@ -242,7 +243,7 @@ export class ClassroomService {
         }
     
         if(expireCode < now) 
-            throw new HttpException("Date to expire code invalid", HttpStatus.BAD_REQUEST)
+            throw new ExpiredEnrollmentCodeException()
 
         const enrollmentCode = await this.prisma.enrollmentCode.create({
             data: {
@@ -261,10 +262,10 @@ export class ClassroomService {
         const existingCode = await this.findOneCode(inviteCode);
 
         if (!existingCode) 
-            throw new HttpException("Code not found", HttpStatus.NOT_FOUND)
+            throw new EnrollmentCodeNotFoundException()
 
         if(existingCode.expiresAt < now || existingCode.used) 
-            throw new HttpException("Code expired", HttpStatus.BAD_REQUEST)
+            throw new InvalidEnrollmentCodeException()
         
         const addStudentToClassroom = await this.prisma.classroom.update({
             where: { id: existingCode.classroomId },

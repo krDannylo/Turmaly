@@ -11,10 +11,10 @@ export class SignUpDto {
     readonly name: string
 
     @IsEmail()
-    @IsOptional()
+    @IsNotEmpty()
     readonly email: string
 
-    @IsEmail()
+    @IsString()
     @IsOptional()
     readonly phone: string
 
