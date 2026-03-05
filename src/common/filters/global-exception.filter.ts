@@ -30,12 +30,20 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       message = exception.message;
     }
 
-    this.logger.error({
-      message,
-      path: request.url,
-      method: request.method,
-      stack: exception instanceof Error ? exception.stack : null,
-    });
+    // this.logger.error(
+    //   {
+    //     err: exception,
+    //     method: request.method,
+    //     path: request.url,
+    //   },
+    //   `HTTP ${request.method} ${request.url} ${status}`,
+    // );
+
+    // this.logger.error({
+    //   err: exception,
+    //   path: request.url,
+    //   method: request.method,
+    // });
 
     response.status(status).json({
       statusCode: status,
