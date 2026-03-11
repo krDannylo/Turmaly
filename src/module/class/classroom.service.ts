@@ -1,5 +1,5 @@
 import { UserProfileDto } from './../user/dto/user-profile.dto';
-import { ForbiddenException, HttpException, HttpStatus, Injectable } from "@nestjs/common";
+import { ForbiddenException, HttpStatus, Injectable } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { CreateClassroomDto } from "./dto/create-classroom.dto";
 import { UpdateClassroomDto } from "./dto/update-classroom.dto";

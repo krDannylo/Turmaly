@@ -100,7 +100,6 @@ export class ClassroomController {
         @Body() createLessonDto: CreateLessonDto,
         @GetUserProfile() profile: UserProfileDto
     ): Promise<ResponseLessonDto> {
-        console.log(profile);
         return this.lessonService.create(createLessonDto, profile , classroomId);
     }
 

@@ -7,7 +7,7 @@ export class LlmController {
         private chatService: ChatService
     ){ }
 
-    @Get('test-ai')
+    @Get('chat-ai')
     async test(): Promise<any> {
         return this.chatService.handleMessage('');
     }

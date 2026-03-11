@@ -12,6 +12,8 @@ export const AppLoggerModule = LoggerModule.forRoot({
         colorize: true,
         singleLine: true,
         ignore: 'req,res',
+        translateTime: 'HH:MM:ss',
+        messageFormat: '{msg}',
       },
     },
 
