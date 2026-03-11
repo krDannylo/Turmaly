@@ -6,6 +6,7 @@ import { ConfigModule } from '@nestjs/config';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { SanitizePipe } from './common/pipes/sanitize.pipe';
 import helmet from 'helmet';
+import * as Joi from 'joi';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -14,6 +15,15 @@ async function bootstrap() {
   ConfigModule.forRoot({
     isGlobal: true,
     envFilePath: '.env',
+    validationSchema: Joi.object({
+      RESEND_API_KEY: Joi.string().required(),
+      DATABASE_URL: Joi.string().required(),
+      DB_USER: Joi.string().required(),
+      DB_PASSWORD: Joi.string().required(),
+      DB_NAME: Joi.string().required(),
+      JWT_SECRET: Joi.string().required(),
+      OPENAI_API_KEY: Joi.string().required(),
+    })
   })
 
   app.enableCors({

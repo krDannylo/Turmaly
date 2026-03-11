@@ -21,7 +21,7 @@ import { GlobalExceptionFilter } from 'src/common/filters/global-exception.filte
     LessonModule,
     PostModule,
     LlmModule,
-    // ScheduleModule.forRoot(),
+    ScheduleModule.forRoot(),
     AppLoggerModule,
     ThrottlerModule.forRoot({
       throttlers: [{

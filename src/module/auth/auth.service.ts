@@ -1,4 +1,4 @@
-import { HttpException, HttpStatus, Inject, Injectable } from "@nestjs/common";
+import { Inject, Injectable } from "@nestjs/common";
 import { HashingServiceProtocol } from "src/common/hash/hashing.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { JwtService } from "@nestjs/jwt";
@@ -7,15 +7,17 @@ import { SignInDto } from './dto/sign-in.dto';
 import { UserRole } from '@prisma/client';
 import jwtConfig from "./config/jwt.config";
 import type { ConfigType } from '@nestjs/config';
-import { EmailAlreadyInUseException, InvalidCredentialsException, InvalidRoleException, UserNotFoundException } from "./exceptions/auth.exception";
+import { EmailAlreadyInUseException, EmailAlreadyVerified, InvalidCredentialsException, InvalidRoleException, UserNotFoundException } from "./exceptions/auth.exception";
 import { SignInResponseDto } from "./dto/sign-in-response.dto";
 import { SignUpResponseDto } from "./dto/sign-up-response.dto";
+import { EmailQueue } from "./jobs/email-queue";
 
 @Injectable()
 export class AuthService {
     constructor(
         private readonly prisma: PrismaService,
         private readonly hashingService: HashingServiceProtocol,
+        private readonly emailQueue: EmailQueue,
 
         @Inject(jwtConfig.KEY)
         private readonly jwtConfiguration: ConfigType<typeof jwtConfig>,
@@ -70,54 +72,86 @@ export class AuthService {
     }
 
     async register(singUpDto: SignUpDto): Promise<SignUpResponseDto> {
-        const { name, email, password } = singUpDto;
-        const role = singUpDto.role.toLocaleUpperCase() as UserRole;
+        try{
+            const { name, email, password } = singUpDto;
+            const role = singUpDto.role.toLocaleUpperCase() as UserRole;
 
-        const allowedRoles: UserRole[] = [UserRole.STUDENT, UserRole.TEACHER];
+            const allowedRoles: UserRole[] = [UserRole.STUDENT, UserRole.TEACHER];
 
-        if(!allowedRoles.includes(role)) throw new InvalidRoleException();
-        
-        const userExists = await this.prisma.user.findUnique({
-            where: { email },
-        });
-
-        if (userExists) throw new EmailAlreadyInUseException();
-
-        const passwordHash = await this.hashingService.hash(password);
-
-        const [user] = await this.prisma.$transaction(async (prisma) => {
-            const createdUser = await prisma.user.create({
-                data: {
-                name,
-                email,
-                password: passwordHash,
-                role,
-                },
+            if(!allowedRoles.includes(role)) throw new InvalidRoleException();
+            
+            const userExists = await this.prisma.user.findUnique({
+                where: { email },
             });
 
-            let createdProfile;
-            if (role === UserRole.TEACHER) {
-                createdProfile = await prisma.teacher.create({
-                data: { user: { connect: { id: createdUser.id } } },
-                select: { id: true },
-                });
-            } else {
-                createdProfile = await prisma.student.create({
-                data: { user: { connect: { id: createdUser.id } } },
-                select: { id: true },
-                });
-            }
+            if (userExists) throw new EmailAlreadyInUseException();
 
-            return [createdUser, createdProfile];
-        });
+            const passwordHash = await this.hashingService.hash(password);
 
-        return {
-            id: user.id,
-            name: user.name,
-            email: user.email,
-            role: user.role,
-            // ...(role === UserRole.TEACHER && { teacher: profile }),
-            // ...(role === UserRole.STUDENT && { student: profile }),
-        };
+            const [user] = await this.prisma.$transaction(async (prisma) => {
+                const createdUser = await prisma.user.create({
+                    data: {
+                    name,
+                    email,
+                    password: passwordHash,
+                    role,
+                    emailVerified: false
+                    },
+                });
+
+                let createdProfile;
+                if (role === UserRole.TEACHER) {
+                    createdProfile = await prisma.teacher.create({
+                    data: { user: { connect: { id: createdUser.id } } },
+                    select: { id: true },
+                    });
+                } else {
+                    createdProfile = await prisma.student.create({
+                    data: { user: { connect: { id: createdUser.id } } },
+                    select: { id: true },
+                    });
+                }
+
+                return [createdUser, createdProfile];
+            });
+
+            await this.emailQueue.sendVerificationEmail(user)
+
+            return {
+                id: user.id,
+                name: user.name,
+                email: user.email,
+                role: user.role,
+                // ...(role === UserRole.TEACHER && { teacher: profile }),
+                // ...(role === UserRole.STUDENT && { student: profile }),
+            };
+        } catch(err){
+            console.log(err)
+            throw err
+        }
     }
+
+    async validateEmail(token: string){
+        const payload = this.jwtService.verify(token)
+        await this.updateEmailToVerified(payload.sub)
+        return {
+            message: 'Email Verified Successfully'
+        }
+    }
+
+    async updateEmailToVerified(userId: number){
+        const user = await this.prisma.user.findFirst({
+            where: { id: userId }
+        })
+
+        if(user?.emailVerified) throw new EmailAlreadyVerified()
+
+        return this.prisma.user.update({
+            where: { id: userId },
+            data: {
+                emailVerified: true
+            }
+        })
+    }
+
 }

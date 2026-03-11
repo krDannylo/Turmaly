@@ -36,3 +36,9 @@ export class InvalidTokenException extends UnauthorizedException {
     super('Access denied');
   }
 }
+
+export class EmailAlreadyVerified extends DomainError {
+  constructor() {
+    super('Email already verified', HttpStatus.BAD_REQUEST, 'AUTH_EMAIL_ALREADY_VERIFIED');
+  }
+}
