@@ -28,6 +28,7 @@ model User {
 
   teacher         Teacher?
   student         Student?
+  refreshToken    RefreshToken?
 
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
@@ -139,6 +140,18 @@ model ClassroomStudent {
   student         Student       @relation(fields: [studentId], references: [id])
 
   @@id([classroomId, studentId]) // impede duplicação
+}
+
+model RefreshToken {
+  id               String   @id
+  userId           Int      @unique
+  refreshTokenHash String
+  expires_at       DateTime
+
+  user             User     @relation(fields: [userId], references: [id])
+  
+  createdAt        DateTime @default(now())
+  @@index([userId])
 }
 
 //Comando para rodar novas migrations

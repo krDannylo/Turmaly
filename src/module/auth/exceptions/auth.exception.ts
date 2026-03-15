@@ -42,3 +42,9 @@ export class EmailAlreadyVerified extends DomainError {
     super('Email already verified', HttpStatus.BAD_REQUEST, 'AUTH_EMAIL_ALREADY_VERIFIED');
   }
 }
+
+export class EmailNotVerified extends DomainError {
+  constructor() {
+    super('Email not verified', HttpStatus.BAD_REQUEST, 'AUTH_EMAIL_NOT_VERIFIED');
+  }
+}
